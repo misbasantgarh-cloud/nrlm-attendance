@@ -1,0 +1,71 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="box">
+
+<h3>Block Final Leave Approval</h3>
+
+<table id="tbl"></table>
+
+</div>
+
+<script>
+
+var api="https://script.google.com/macros/s/AKfycbw1oblLc1QnF_nBIOmktcqp3mToPbaIapGEGecXjIRDYdcd9uK7dxBxrADRodfcy14QqA/exec";
+
+load();
+
+function load(){
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({action:"getLeaves"})
+})
+.then(r=>r.text())
+.then(d=>{
+
+var data=JSON.parse(d);
+
+var h="<tr><th>User</th><th>From</th><th>To</th><th>Reason</th><th>Action</th></tr>";
+
+for(i=1;i<data.length;i++){
+
+if(data[i][5]=="Approved" && data[i][7]=="Pending"){
+
+h+="<tr><td>"+data[i][1]+"</td><td>"+data[i][2]+"</td><td>"+data[i][3]+"</td><td>"+data[i][4]+"</td>";
+
+h+="<td><button onclick=act('"+data[i][0]+"','Approved')>Approve</button>";
+
+h+="<button onclick=act('"+data[i][0]+"','Rejected')>Reject</button></td></tr>";
+
+}
+}
+
+tbl.innerHTML=h;
+
+});
+
+}
+
+function act(id,s){
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({
+action:"approveBlock",
+leaveid:id,
+status:s})
+})
+.then(r=>r.text())
+.then(d=>load());
+
+}
+
+</script>
+
+</body>
+</html>

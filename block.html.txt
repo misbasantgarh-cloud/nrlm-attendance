@@ -1,0 +1,19 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="box">
+
+<h3>Block Dashboard</h3>
+
+<button onclick="location='reports.html'">Reports</button>
+<button onclick="location='summary.html'">Monthly Summary</button>
+<button onclick="location='block_leave.html'">Final Leave Approval</button>
+
+</div>
+
+</body>
+</html>

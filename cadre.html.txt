@@ -1,0 +1,66 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="box">
+
+<h3>Cadre Dashboard</h3>
+
+<button onclick="markIn()">MARK IN</button>
+<button onclick="markOut()">MARK OUT</button>
+
+<button onclick="location='leave.html'">Apply Leave</button>
+
+<p id="msg"></p>
+
+</div>
+
+<script>
+
+var api="https://script.google.com/macros/s/AKfycbw1oblLc1QnF_nBIOmktcqp3mToPbaIapGEGecXjIRDYdcd9uK7dxBxrADRodfcy14QqA/exec";
+
+function markIn(){
+
+navigator.geolocation.getCurrentPosition(p=>{
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({
+action:"markIn",
+userid:localStorage.uid,
+lat:p.coords.latitude,
+lon:p.coords.longitude})
+})
+.then(r=>r.text())
+.then(d=>msg.innerHTML=d);
+
+});
+
+}
+
+function markOut(){
+
+navigator.geolocation.getCurrentPosition(p=>{
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({
+action:"markOut",
+userid:localStorage.uid,
+lat:p.coords.latitude,
+lon:p.coords.longitude})
+})
+.then(r=>r.text())
+.then(d=>msg.innerHTML=d);
+
+});
+
+}
+
+</script>
+
+</body>
+</html>

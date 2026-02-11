@@ -1,0 +1,45 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="box">
+
+<h3>Apply Leave</h3>
+
+From: <input type="date" id="f"><br>
+To: <input type="date" id="t"><br>
+Reason: <input id="r">
+
+<button onclick="apply()">Submit</button>
+
+<p id="msg"></p>
+
+</div>
+
+<script>
+
+var api="https://script.google.com/macros/s/AKfycbw1oblLc1QnF_nBIOmktcqp3mToPbaIapGEGecXjIRDYdcd9uK7dxBxrADRodfcy14QqA/exec";
+
+function apply(){
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({
+action:"applyLeave",
+userid:localStorage.uid,
+from:f.value,
+to:t.value,
+reason:r.value})
+})
+.then(r=>r.text())
+.then(d=>msg.innerHTML=d);
+
+}
+
+</script>
+
+</body>
+</html>

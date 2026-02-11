@@ -1,0 +1,50 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="box">
+
+<h3>BPM Dashboard</h3>
+
+<button onclick="load()">View Attendance</button>
+<button onclick="location='bpm_leave.html'">Leave Approvals</button>
+
+<table id="tbl"></table>
+
+</div>
+
+<script>
+
+var api="https://script.google.com/macros/s/AKfycbw1oblLc1QnF_nBIOmktcqp3mToPbaIapGEGecXjIRDYdcd9uK7dxBxrADRodfcy14QqA/exec";
+
+function load(){
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({action:"getReport"})
+})
+.then(r=>r.text())
+.then(d=>{
+
+var data=JSON.parse(d);
+
+var h="<tr><th>Date</th><th>User</th><th>In</th><th>Out</th><th>Location</th></tr>";
+
+for(i=1;i<data.length;i++){
+
+h+="<tr><td>"+data[i][0]+"</td><td>"+data[i][1]+"</td><td>"+data[i][3]+"</td><td>"+data[i][7]+"</td><td>"+data[i][6]+"</td></tr>";
+}
+
+tbl.innerHTML=h;
+
+});
+
+}
+
+</script>
+
+</body>
+</html>

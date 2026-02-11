@@ -1,0 +1,51 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="box">
+
+<h3>Monthly Summary</h3>
+
+<input id="m" placeholder="Enter Month (e.g 3/2025)">
+
+<button onclick="load()">Generate</button>
+
+<table id="tbl"></table>
+
+</div>
+
+<script>
+
+var api="https://script.google.com/macros/s/AKfycbw1oblLc1QnF_nBIOmktcqp3mToPbaIapGEGecXjIRDYdcd9uK7dxBxrADRodfcy14QqA/exec";
+
+function load(){
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({
+action:"monthlySummary",
+month:m.value})
+})
+.then(r=>r.text())
+.then(d=>{
+
+var data=JSON.parse(d);
+
+var h="<tr><th>User</th><th>Days Present</th></tr>";
+
+for(k in data)
+h+="<tr><td>"+k+"</td><td>"+data[k].present+"</td></tr>";
+
+tbl.innerHTML=h;
+
+});
+
+}
+
+</script>
+
+</body>
+</html>

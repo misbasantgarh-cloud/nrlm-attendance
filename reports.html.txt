@@ -1,0 +1,77 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="box">
+
+<h3>Attendance Reports</h3>
+
+<button onclick="load()">Load Data</button>
+<button onclick="exportExcel()">Export Excel</button>
+
+<table id="tbl"></table>
+
+</div>
+
+<script>
+
+var api="https://script.google.com/macros/s/AKfycbw1oblLc1QnF_nBIOmktcqp3mToPbaIapGEGecXjIRDYdcd9uK7dxBxrADRodfcy14QqA/exec";
+
+var globalData;
+
+function load(){
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({action:"getReport"})
+})
+.then(r=>r.text())
+.then(d=>{
+
+globalData=JSON.parse(d);
+
+var h="";
+
+for(i=0;i<globalData.length;i++){
+
+h+="<tr>";
+
+for(j=0;j<globalData[i].length;j++)
+h+="<td>"+globalData[i][j]+"</td>";
+
+h+="</tr>";
+}
+
+tbl.innerHTML=h;
+
+});
+
+}
+
+function exportExcel(){
+
+var csv="";
+
+for(i=0;i<globalData.length;i++){
+
+csv+=globalData[i].join(",")+"\n";
+
+}
+
+var a=document.createElement("a");
+
+a.href="data:text/csv,"+csv;
+
+a.download="attendance.csv";
+
+a.click();
+
+}
+
+</script>
+
+</body>
+</html>

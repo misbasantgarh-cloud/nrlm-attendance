@@ -1,0 +1,58 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>NRLM Attendance System</h2>
+
+<input id="uid" placeholder="User ID">
+<input id="pass" type="password" placeholder="Password">
+
+<button onclick="login()">Login</button>
+
+<p id="msg"></p>
+
+</div>
+
+<script>
+
+var api="https://script.google.com/macros/s/AKfycbw1oblLc1QnF_nBIOmktcqp3mToPbaIapGEGecXjIRDYdcd9uK7dxBxrADRodfcy14QqA/exec";
+
+function login(){
+
+fetch(api,{
+method:"POST",
+body:new URLSearchParams({
+action:"login",
+userid:uid.value,
+password:pass.value})
+})
+.then(r=>r.text())
+.then(d=>{
+
+var res=JSON.parse(d);
+
+if(res.status=="ok"){
+
+localStorage.setItem("uid",uid.value);
+localStorage.setItem("role",res.role);
+
+if(res.role=="CADRE") location="cadre.html";
+if(res.role=="BPM") location="bpm.html";
+if(res.role=="BLOCK") location="block.html";
+
+}
+else msg.innerHTML="Login Failed";
+
+});
+
+}
+
+</script>
+
+</body>
+</html>
