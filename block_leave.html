@@ -1,6 +1,8 @@
 <html>
 <head>
 <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 </head>
 
 <body>
@@ -67,8 +69,52 @@ status:s})
 
 </script>
 
+<script>
+
+$(document).ready(function(){
+
+  $(".box").addClass("fade");
+
+  $("button").click(function(){
+     $(this).css("opacity","0.8");
+     setTimeout(()=>$(this).css("opacity","1"),200);
+  });
+
+  $("input, textarea, select").focus(function(){
+     $(this).css("border","2px solid #2b7cff");
+  });
+
+  $("input, textarea, select").blur(function(){
+     $(this).css("border","1px solid #ccc");
+  });
+
+});
+
+
+function showMessage(msg,type){
+
+  var css = type=="success" ? "alert success" : "alert error";
+
+  $("#msg").html("<div class='"+css+"'>"+msg+"</div>");
+
+  setTimeout(()=>$("#msg").html(""),3000);
+}
+
+
+function showLoader(){
+  $(".loader").show();
+}
+
+function hideLoader(){
+  $(".loader").hide();
+}
+
+</script>
+
+  
 </body>
 </html>
+
 
 
 
