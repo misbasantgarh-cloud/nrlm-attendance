@@ -220,7 +220,7 @@ Reason:
 
 <script>
 
-var URL = "https://script.google.com/macros/s/AKfycbwT0XCgis-rzpjUsbvFNJ-kYVuVB3sx694Cr2XNpzBiZZUKreuV67vOzyWqd03nnDqD/exec";
+var URL = "https://script.google.com/macros/s/AKfycbwqfshSwYpInJf-2r6J18gx6eU6wpRCZ0Pk76vUD-3gy_oa8paIZx2C4d9ypK5M0juLxQ/exec";
 
 var userid = "";
 var userRole = "";
@@ -247,12 +247,12 @@ var id = $("#userid").val().trim();
 var pass = $("#password").val().trim();
 
 if(id == ""){
-showPopup("Please Enter User ID","error");
+showPopup("Enter User ID","error");
 return;
 }
 
 if(pass == ""){
-showPopup("Please Enter Password","error");
+showPopup("Enter Password","error");
 return;
 }
 
@@ -276,18 +276,22 @@ $("#uname").html(r.name + " ("+ r.role +")");
 $("#loginBox").hide();
 $("#mainPanel").show();
 
-applyRoleInterface(r.role);
+applyRoleInterface(userRole);
 
 showPopup("Login Successful","success");
 
 }
+else if(r.status=="wrong_pass"){
+showPopup("Wrong Password","error");
+}
 else{
-showPopup("Invalid Login","error");
+showPopup("User Not Found","error");
 }
 
 });
 
 }
+
 
 
 
@@ -301,7 +305,7 @@ $("#menuBPM").hide();
 $("#menuBlock").hide();
 $("#menuReports").hide();
 
-if(role == "CADRE" || role == "CADER" || role == "CC" || role == "CDEO" || role == "MOBILIZER"){
+if(role == "CADRE" || role == "CC" || role == "CDEO" || role == "MOBILIZER"){
 
     $("#menuAttendance").show();
     $("#menuLeave").show();
@@ -322,39 +326,8 @@ else if(role == "BLOCK"){
 
 }
 
-else{
-
-    showPopup("Invalid Role Assigned: " + role, "error");
-
 }
 
-}
-
-
-
-
-function show(id){
-
-$(".box").hide();
-$("#"+id).show();
-
-}
-
-
-
-function backHome(){
-
-$(".box").hide();
-
-}
-
-
-
-function logout(){
-
-location.reload();
-
-}
 
 
 
@@ -378,6 +351,7 @@ showPopup(res,"success");
 });
 
 }
+
 
 
 
@@ -433,69 +407,23 @@ showPopup(res,"success");
 
 
 
-function loadLeaves(){
-
-$.post(URL,{action:"getLeaves"},function(res){
-
-var d = JSON.parse(res);
-
-var html = "<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr>";
-
-for(var i=1;i<d.length;i++){
-
-html += "<tr>";
-html += "<td>"+d[i][0]+"</td>";
-html += "<td>"+d[i][1]+"</td>";
-html += "<td>"+d[i][2]+"</td>";
-html += "<td>"+d[i][3]+"</td>";
-html += "<td>"+d[i][4]+"</td>";
-html += "<td>"+d[i][7]+"</td>";
-html += "</tr>";
-
+function logout(){
+location.reload();
 }
 
-$("#bpmLeaveTable").html(html);
-$("#blockLeaveTable").html(html);
-
-});
-
+function show(id){
+$(".box").hide();
+$("#"+id).show();
 }
 
-
-
-function loadReport(){
-
-$.post(URL,{action:"getReport"},function(res){
-
-var d = JSON.parse(res);
-
-var html="<tr>";
-
-for(var i=0;i<d[0].length;i++)
-html+="<th>"+d[0][i]+"</th>";
-
-html+="</tr>";
-
-for(var i=1;i<d.length;i++){
-
-html+="<tr>";
-
-for(var j=0;j<d[i].length;j++)
-html+="<td>"+d[i][j]+"</td>";
-
-html+="</tr>";
-
+function backHome(){
+$(".box").hide();
 }
-
-$("#reportTable").html(html);
-
-});
-
-}
-
 
 </script>
 
+
 </body>
 </html>
+
 
