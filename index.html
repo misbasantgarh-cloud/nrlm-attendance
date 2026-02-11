@@ -1,7 +1,8 @@
+<!DOCTYPE html>
 <html>
 <head>
 
-<title>NRLM Geo Attendance System////</title>
+<title>NRLM Geo Attendance System</title>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -37,6 +38,11 @@ button{
   color:white;
   border:none;
   border-radius:5px;
+  cursor:pointer;
+}
+
+button:hover{
+  opacity:0.9;
 }
 
 .menu button{
@@ -79,13 +85,8 @@ th,td{
   display:none;
 }
 
-.success{
-  color:green;
-}
-
-.error{
-  color:red;
-}
+.success{ color:green; }
+.error{ color:red; }
 
 </style>
 
@@ -100,26 +101,26 @@ th,td{
   <button onclick="$('#popup').hide()">OK</button>
 </div>
 
-
+<!-- LOGIN -->
 <div class="box" id="loginBox">
-
 <h3>Login</h3>
-
 <input id="userid" placeholder="User ID">
 <input id="password" type="password" placeholder="Password">
-
 <button onclick="login()">Login</button>
-
 </div>
 
-
+<!-- MAIN PANEL -->
 <div id="mainPanel" class="hide">
 
 <h3>Welcome <span id="uname"></span></h3>
 
 <div class="menu">
 
-<button id="menuLeave" onclick="show('leaveBox')">Apply Leave</button>
+<button id="menuLeave" onclick="show('leaveBox')" style="display:none;">Apply Leave</button>
+
+<button id="menuAttendance" onclick="show('attendanceBox')" style="display:none;">
+Geo Attendance
+</button>
 
 <button id="menuBPM" onclick="show('bpmPanel')" style="display:none;">BPM Approvals</button>
 
@@ -131,84 +132,49 @@ th,td{
 
 </div>
 
-<div class="box hide" id="attendanceBox">
-
-<h3>Geo Attendance</h3>
-
-<button onclick="markIn()">Attendance IN</button>
-
-<button onclick="markOut()">Attendance OUT</button>
-
-<button class="backBtn" onclick="backHome()">Back</button>
-
-</div>
-
-
+<!-- APPLY LEAVE -->
 <div class="box hide" id="leaveBox">
-
 <h3>Apply Leave</h3>
-
-From:
-<input id="from">
-
-To:
-<input id="to">
-
-Reason:
-<input id="reason">
-
+From:<input id="from" type="date">
+To:<input id="to" type="date">
+Reason:<input id="reason">
 <button onclick="applyLeave()">Apply</button>
-
 <button class="backBtn" onclick="backHome()">Back</button>
-
 </div>
 
+<!-- GEO ATTENDANCE -->
+<div class="box hide" id="attendanceBox">
+<h3>Geo Attendance</h3>
+<button onclick="markIn()">Attendance IN</button>
+<button onclick="markOut()">Attendance OUT</button>
+<button class="backBtn" onclick="backHome()">Back</button>
+</div>
 
-
+<!-- BPM PANEL -->
 <div class="box hide" id="bpmPanel">
-
 <h3>BPM – Approvals</h3>
-
 <button onclick="loadLeaves()">Load Leaves</button>
-
 <table id="bpmTable"></table>
-
 <button class="backBtn" onclick="backHome()">Back</button>
-
 </div>
 
-
-
+<!-- BLOCK PANEL -->
 <div class="box hide" id="blockPanel">
-
 <h3>Block – Final Approvals</h3>
-
 <button onclick="loadLeaves()">Load Leaves</button>
-
 <table id="blockTable"></table>
-
 <button class="backBtn" onclick="backHome()">Back</button>
-
 </div>
 
-
-
+<!-- REPORT PANEL -->
 <div class="box hide" id="reportPanel">
-
 <h3>Reports</h3>
-
 <button onclick="loadReport()">Load Report</button>
-
 <table id="reportTable"></table>
-
 <button class="backBtn" onclick="backHome()">Back</button>
-
 </div>
 
-
 </div>
-
-
 
 <script>
 
@@ -217,172 +183,101 @@ var URL = "https://script.google.com/macros/s/AKfycbzgtyg9CuAvNv6oCMXWxjuhMVfRnq
 var userid="";
 var role="";
 
-
 function showPopup(msg,type){
-$("#popMsg").html(msg);
-$("#popMsg").attr("class",type);
-$("#popup").show();
+  $("#popMsg").html(msg);
+  $("#popMsg").attr("class",type);
+  $("#popup").show();
 }
 
-
-
 function login(){
-
 $.post(URL,{
-
-action:"login",
-userid:$("#userid").val(),
-password:$("#password").val()
-
+  action:"login",
+  userid:$("#userid").val(),
+  password:$("#password").val()
 },function(res){
 
 var r = JSON.parse(res);
 
 if(r.status=="ok"){
+  userid=$("#userid").val();
+  role=r.role;
 
-userid=$("#userid").val();
-role=r.role;
+  $("#uname").html(r.name + " ("+r.role+")");
+  $("#loginBox").hide();
+  $("#mainPanel").show();
 
-$("#uname").html(r.name + " ("+r.role+")");
+  if(role=="CADRE"){
+    $("#menuLeave").show();
+    $("#menuAttendance").show();
+  }
+  else if(role=="BPM"){
+    $("#menuBPM").show();
+  }
+  else if(role=="BLOCK"){
+    $("#menuBlock").show();
+    $("#menuReports").show();
+  }
 
-$("#loginBox").hide();
-$("#mainPanel").show();
-
-if(role=="CADRE"){
-$("#menuLeave").show();
-}
-else if(role=="BPM"){
-$("#menuBPM").show();
-}
-else if(role=="BLOCK"){
-$("#menuBlock").show();
-$("#menuReports").show();
-}
-
-showPopup("Login Successful","success");
-
+  showPopup("Login Successful","success");
 }
 else{
-showPopup("Login Failed","error");
+  showPopup("Login Failed","error");
 }
 
 });
-
 }
-
-
 
 function applyLeave(){
-
 $.post(URL,{
-
-action:"applyLeave",
-userid:userid,
-from:$("#from").val(),
-to:$("#to").val(),
-reason:$("#reason").val()
-
+  action:"applyLeave",
+  userid:userid,
+  from:$("#from").val(),
+  to:$("#to").val(),
+  reason:$("#reason").val()
 },function(res){
-
-showPopup(res,"success");
-
+  showPopup(res,"success");
 });
-
 }
 
-
-
-function loadLeaves(){
-
-$.post(URL,{action:"getLeaves"},function(res){
-
-var d = JSON.parse(res);
-
-var html="<tr><th>ID</th><th>User</th><th>Reason</th><th>BPM</th><th>Block</th><th>Action</th></tr>";
-
-for(var i=1;i<d.length;i++){
-
-html+="<tr>";
-
-html+="<td>"+d[i][0]+"</td>";
-html+="<td>"+d[i][1]+"</td>";
-html+="<td>"+d[i][4]+"</td>";
-html+="<td>"+d[i][5]+"</td>";
-html+="<td>"+d[i][6]+"</td>";
-
-if(role=="BPM"){
-
-html+="<td><button onclick='bpm(\""+d[i][0]+"\",\"approve\")'>Approve</button> "+
-      "<button onclick='bpm(\""+d[i][0]+"\",\"reject\")'>Reject</button></td>";
-
+function markIn(){
+if(!navigator.geolocation){
+ showPopup("Geolocation Not Supported","error");
+ return;
 }
 
-if(role=="BLOCK"){
-
-html+="<td><button onclick='block(\""+d[i][0]+"\",\"approve\")'>Approve</button> "+
-      "<button onclick='block(\""+d[i][0]+"\",\"reject\")'>Reject</button></td>";
-
-}
-
-html+="</tr>";
-
-}
-
-$("#bpmTable").html(html);
-$("#blockTable").html(html);
-
+navigator.geolocation.getCurrentPosition(function(p){
+$.post(URL,{
+  action:"markIn",
+  userid:userid,
+  lat:p.coords.latitude,
+  lon:p.coords.longitude
+},function(res){
+  showPopup(res,"success");
 });
-
-}
-
-
-
-function bpm(id,type){
-
-$.post(URL,{action:"bpmDecision",id:id,type:type},function(res){
-showPopup(res,"success");
-loadLeaves();
+}, function(){
+showPopup("Allow Location Permission","error");
 });
-
 }
 
+function markOut(){
+if(!navigator.geolocation){
+ showPopup("Geolocation Not Supported","error");
+ return;
+}
 
-
-function block(id,type){
-
-$.post(URL,{action:"blockDecision",id:id,type:type},function(res){
-showPopup(res,"success");
-loadLeaves();
+navigator.geolocation.getCurrentPosition(function(p){
+$.post(URL,{
+  action:"markOut",
+  userid:userid,
+  lat:p.coords.latitude,
+  lon:p.coords.longitude
+},function(res){
+  showPopup(res,"success");
 });
-
-}
-
-
-
-function loadReport(){
-
-$.post(URL,{action:"getReport"},function(res){
-
-var d = JSON.parse(res);
-
-var html="";
-
-for(var i=0;i<d.length;i++){
-html+="<tr>";
-
-for(var j=0;j<d[i].length;j++)
-html+="<td>"+d[i][j]+"</td>";
-
-html+="</tr>";
-}
-
-$("#reportTable").html(html);
-
+}, function(){
+showPopup("Allow Location Permission","error");
 });
-
 }
-
-
 
 function show(id){
 $(".box").hide();
@@ -397,67 +292,7 @@ function logout(){
 location.reload();
 }
 
-  function markIn(){
-
-if(!navigator.geolocation){
- showPopup("Geolocation Not Supported","error");
- return;
-}
-
-navigator.geolocation.getCurrentPosition(function(p){
-
-$.post(URL,{
-
-action:"markIn",
-userid:userid,
-lat:p.coords.latitude,
-lon:p.coords.longitude
-
-},function(res){
-
-showPopup(res,"success");
-
-});
-
-}, function(){
-showPopup("Allow Location Permission","error");
-});
-
-}
-
-
-
-function markOut(){
-
-if(!navigator.geolocation){
- showPopup("Geolocation Not Supported","error");
- return;
-}
-
-navigator.geolocation.getCurrentPosition(function(p){
-
-$.post(URL,{
-
-action:"markOut",
-userid:userid,
-lat:p.coords.latitude,
-lon:p.coords.longitude
-
-},function(res){
-
-showPopup(res,"success");
-
-});
-
-}, function(){
-showPopup("Allow Location Permission","error");
-});
-
-}
-
-
 </script>
 
 </body>
 </html>
-
