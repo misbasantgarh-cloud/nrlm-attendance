@@ -20,7 +20,7 @@ body{
   border-radius:10px;
   box-shadow:0px 0px 10px #aaa;
   width:90%;
-  max-width:750px;
+  max-width:700px;
 }
 
 input,select{
@@ -68,26 +68,6 @@ th,td{
   background:green;
 }
 
-.actionBtn{
-  width:auto;
-  margin:3px;
-  background:#444;
-}
-
-.approve{
-  background:green;
-}
-
-.reject{
-  background:red;
-}
-
-.pagination button{
-  width:auto;
-  margin:3px;
-  background:#444;
-}
-
 #popup{
   position:fixed;
   top:30%;
@@ -109,6 +89,12 @@ th,td{
 .error{
   color:red;
   font-size:18px;
+}
+
+.pagination button{
+  width:auto;
+  margin:3px;
+  background:#444;
 }
 
 </style>
@@ -197,11 +183,11 @@ Reason:
 
 <h3>BPM – Leave Approvals</h3>
 
-<button onclick="loadBPMLeaves()">Load Leave Requests</button>
+<button onclick="loadLeaves()">Load Leave Requests</button>
 
 <table id="bpmLeaveTable"></table>
 
-<div id="bpmPagination" class="pagination"></div>
+<div id="leavePagination" class="pagination"></div>
 
 <button class="backBtn" onclick="backHome()">Back</button>
 
@@ -213,11 +199,11 @@ Reason:
 
 <h3>Block – Final Approvals</h3>
 
-<button onclick="loadBlockLeaves()">Load Pending BPM Approved Leaves</button>
+<button onclick="loadLeaves()">Load All Requests</button>
 
 <table id="blockLeaveTable"></table>
 
-<div id="blockPagination" class="pagination"></div>
+<div id="leavePagination2" class="pagination"></div>
 
 <button class="backBtn" onclick="backHome()">Back</button>
 
@@ -253,7 +239,7 @@ var userRole = "";
 
 var pageSize = 10;
 var currentPage = 1;
-var tableData = [];
+var reportData = [];
 
 
 function showPopup(msg,type){
@@ -275,6 +261,16 @@ function login(){
 
 var id = $("#userid").val().trim();
 var pass = $("#password").val().trim();
+
+if(id == ""){
+showPopup("Enter User ID","error");
+return;
+}
+
+if(pass == ""){
+showPopup("Enter Password","error");
+return;
+}
 
 $.post(URL,{
 
@@ -346,15 +342,22 @@ else if(role == "BLOCK"){
 
 
 
-// ---------- BPM LEAVE SECTION -----------
+function markIn(){
 
-function loadBPMLeaves(){
+navigator.geolocation.getCurrentPosition(function(p){
 
-$.post(URL,{action:"getBPMLeaves"},function(res){
+$.post(URL,{
 
-tableData = JSON.parse(res);
+action:"markIn",
+userid:userid,
+lat:p.coords.latitude,
+lon:p.coords.longitude
 
-renderBPMTable();
+},function(res){
+
+showPopup(res,"success");
+
+});
 
 });
 
@@ -362,118 +365,204 @@ renderBPMTable();
 
 
 
-function renderBPMTable(){
+function markOut(){
 
-var d = tableData;
+navigator.geolocation.getCurrentPosition(function(p){
 
-var html = "<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>Action</th></tr>";
+$.post(URL,{
 
-for(var i=1;i<d.length;i++){
+action:"markOut",
+userid:userid,
+lat:p.coords.latitude,
+lon:p.coords.longitude
+
+},function(res){
+
+showPopup(res,"success");
+
+});
+
+});
+
+}
+
+
+
+function applyLeave(){
+
+var reason = $("#reason").val();
+
+if(reason.trim()==""){
+
+showPopup("Reason Required","error");
+return;
+
+}
+
+$.post(URL,{
+
+action:"applyLeave",
+userid:userid,
+from:$("#from").val(),
+to:$("#to").val(),
+reason:reason
+
+},function(res){
+
+showPopup(res,"success");
+
+});
+
+}
+
+
+
+// ----------- LEAVE REQUESTS WITH PAGINATION -----------
+
+function loadLeaves(){
+
+$.post(URL,{action:"getLeaves"},function(res){
+
+reportData = JSON.parse(res);
+
+currentPage = 1;
+
+renderLeaveTable();
+
+});
+
+}
+
+
+
+function renderLeaveTable(){
+
+var start = (currentPage-1) * pageSize;
+var end = start + pageSize;
+
+var d = reportData;
+
+var html = "<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr>";
+
+for(var i=start+1; i<d.length && i<end+1; i++){
 
 html += "<tr>";
-
 html += "<td>"+d[i][0]+"</td>";
 html += "<td>"+d[i][1]+"</td>";
 html += "<td>"+d[i][2]+"</td>";
 html += "<td>"+d[i][3]+"</td>";
 html += "<td>"+d[i][4]+"</td>";
-
-html += "<td>";
-html += "<button class='approve actionBtn' onclick=\"bpmDecision('"+d[i][0]+"','approve')\">Approve</button>";
-html += "<button class='reject actionBtn' onclick=\"bpmDecision('"+d[i][0]+"','reject')\">Reject</button>";
-html += "</td>";
-
+html += "<td>"+d[i][5]+"</td>";
 html += "</tr>";
 
 }
 
 $("#bpmLeaveTable").html(html);
-
-}
-
-
-
-function bpmDecision(id,type){
-
-$.post(URL,{
-
-action:"bpmDecision",
-id:id,
-type:type
-
-},function(res){
-
-showPopup(res,"success");
-loadBPMLeaves();
-
-});
-
-}
-
-
-
-// ---------- BLOCK LEAVE SECTION -----------
-
-function loadBlockLeaves(){
-
-$.post(URL,{action:"getBlockLeaves"},function(res){
-
-tableData = JSON.parse(res);
-
-renderBlockTable();
-
-});
-
-}
-
-
-
-function renderBlockTable(){
-
-var d = tableData;
-
-var html = "<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>Action</th></tr>";
-
-for(var i=1;i<d.length;i++){
-
-html += "<tr>";
-
-html += "<td>"+d[i][0]+"</td>";
-html += "<td>"+d[i][1]+"</td>";
-html += "<td>"+d[i][2]+"</td>";
-html += "<td>"+d[i][3]+"</td>";
-html += "<td>"+d[i][4]+"</td>";
-
-html += "<td>";
-html += "<button class='approve actionBtn' onclick=\"blockDecision('"+d[i][0]+"','approve')\">Approve</button>";
-html += "<button class='reject actionBtn' onclick=\"blockDecision('"+d[i][0]+"','reject')\">Reject</button>";
-html += "</td>";
-
-html += "</tr>";
-
-}
-
 $("#blockLeaveTable").html(html);
 
+renderLeavePagination();
+
 }
 
 
 
-function blockDecision(id,type){
+function renderLeavePagination(){
 
-$.post(URL,{
+var total = reportData.length - 1;
+var pages = Math.ceil(total / pageSize);
 
-action:"blockDecision",
-id:id,
-type:type
+var p = "";
 
-},function(res){
+for(var i=1;i<=pages;i++){
+p += "<button onclick='gotoLeavePage("+i+")'>"+i+"</button>";
+}
 
-showPopup(res,"success");
-loadBlockLeaves();
+$("#leavePagination").html(p);
+$("#leavePagination2").html(p);
+
+}
+
+
+
+function gotoLeavePage(p){
+currentPage = p;
+renderLeaveTable();
+}
+
+
+
+// ----------- ATTENDANCE REPORT PAGINATION -----------
+
+function loadReport(){
+
+$.post(URL,{action:"getReport"},function(res){
+
+reportData = JSON.parse(res);
+
+currentPage = 1;
+
+renderReportTable();
 
 });
 
+}
+
+
+
+function renderReportTable(){
+
+var start = (currentPage-1) * pageSize;
+var end = start + pageSize;
+
+var d = reportData;
+
+var html="<tr>";
+
+for(var i=0;i<d[0].length;i++)
+html+="<th>"+d[0][i]+"</th>";
+
+html+="</tr>";
+
+
+for(var i=start+1; i<d.length && i<end+1; i++){
+
+html+="<tr>";
+
+for(var j=0;j<d[i].length;j++)
+html+="<td>"+d[i][j]+"</td>";
+
+html+="</tr>";
+
+}
+
+$("#reportTable").html(html);
+
+renderReportPagination();
+
+}
+
+
+
+function renderReportPagination(){
+
+var total = reportData.length - 1;
+var pages = Math.ceil(total / pageSize);
+
+var p = "";
+
+for(var i=1;i<=pages;i++){
+p += "<button onclick='gotoReportPage("+i+")'>"+i+"</button>";
+}
+
+$("#reportPagination").html(p);
+
+}
+
+
+
+function gotoReportPage(p){
+currentPage = p;
+renderReportTable();
 }
 
 
@@ -496,5 +585,3 @@ $(".box").hide();
 
 </body>
 </html>
-
-
