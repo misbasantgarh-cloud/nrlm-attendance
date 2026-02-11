@@ -1,7 +1,7 @@
 <html>
 <head>
 
-<title>NRLM Geo Attendance System</title>
+<title>NRLM Geo Attendance System////</title>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -131,6 +131,17 @@ th,td{
 
 </div>
 
+<div class="box hide" id="attendanceBox">
+
+<h3>Geo Attendance</h3>
+
+<button onclick="markIn()">Attendance IN</button>
+
+<button onclick="markOut()">Attendance OUT</button>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
+</div>
 
 
 <div class="box hide" id="leaveBox">
@@ -201,7 +212,7 @@ Reason:
 
 <script>
 
-var URL = "https://script.google.com/macros/s/AKfycbyYAySG0RNa02DPZA2fHWKtWkBht5uZDJEn1eu24gUQk1-fKYRnhA88OnPxF9VlmP3OXA/exec";
+var URL = "https://script.google.com/macros/s/AKfycbzgtyg9CuAvNv6oCMXWxjuhMVfRnqlYKXvyxkWDrQWPVBW-wM36r83SlOyTfqsAVlLZ4Q/exec";
 
 var userid="";
 var role="";
@@ -386,7 +397,67 @@ function logout(){
 location.reload();
 }
 
+  function markIn(){
+
+if(!navigator.geolocation){
+ showPopup("Geolocation Not Supported","error");
+ return;
+}
+
+navigator.geolocation.getCurrentPosition(function(p){
+
+$.post(URL,{
+
+action:"markIn",
+userid:userid,
+lat:p.coords.latitude,
+lon:p.coords.longitude
+
+},function(res){
+
+showPopup(res,"success");
+
+});
+
+}, function(){
+showPopup("Allow Location Permission","error");
+});
+
+}
+
+
+
+function markOut(){
+
+if(!navigator.geolocation){
+ showPopup("Geolocation Not Supported","error");
+ return;
+}
+
+navigator.geolocation.getCurrentPosition(function(p){
+
+$.post(URL,{
+
+action:"markOut",
+userid:userid,
+lat:p.coords.latitude,
+lon:p.coords.longitude
+
+},function(res){
+
+showPopup(res,"success");
+
+});
+
+}, function(){
+showPopup("Allow Location Permission","error");
+});
+
+}
+
+
 </script>
 
 </body>
 </html>
+
