@@ -1,137 +1,490 @@
-<!DOCTYPE html>
 <html>
 <head>
-<title>NRLM Geo Attendance</title>
+
+<title>NRLM Geo Attendance System</title>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#eef2f7;text-align:center}
-.box{background:white;padding:20px;margin:20px auto;border-radius:10px;
-box-shadow:0px 0px 10px #aaa;width:90%;max-width:600px}
-input{padding:10px;margin:5px;width:90%}
-button{padding:10px;margin:5px;width:95%;background:#2b7cff;color:white;border:none;border-radius:5px}
-.hide{display:none}
-.logout{background:red}
-.success{color:green}
-.error{color:red}
+
+body{
+  font-family: Arial;
+  background:#eef2f7;
+  text-align:center;
+}
+
+.box{
+  background:white;
+  padding:20px;
+  margin:20px auto;
+  border-radius:10px;
+  box-shadow:0px 0px 10px #aaa;
+  width:90%;
+  max-width:600px;
+}
+
+input,select{
+  padding:10px;
+  margin:5px;
+  width:90%;
+}
+
+button{
+  padding:10px;
+  margin:5px;
+  width:95%;
+  background:#2b7cff;
+  color:white;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+}
+
+.menu button{
+  width:auto;
+  margin:5px;
+}
+
+table{
+  width:100%;
+  margin-top:10px;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:8px;
+  border:1px solid #ccc;
+}
+
+.hide{
+  display:none;
+}
+
+.logout{
+  background:red;
+}
+
+.backBtn{
+  background:green;
+}
+
+#popup{
+  position:fixed;
+  top:30%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0px 0px 15px #000;
+  display:none;
+  z-index:999;
+}
+
+.success{
+  color:green;
+  font-size:18px;
+}
+
+.error{
+  color:red;
+  font-size:18px;
+}
+
 </style>
+
 </head>
 
 <body>
 
 <h2>NRLM Geo Attendance Portal</h2>
 
-<div id="loginBox" class="box">
+<div id="popup">
+  <p id="popMsg"></p>
+  <button onclick="$('#popup').hide()">OK</button>
+</div>
+
+
+<div class="box" id="loginBox">
+
 <h3>Login</h3>
+
 <input id="userid" placeholder="User ID">
 <input id="password" type="password" placeholder="Password">
+
 <button onclick="login()">Login</button>
-<p id="msg"></p>
+
 </div>
+
 
 <div id="mainPanel" class="hide">
 
-<div class="box">
 <h3>Welcome <span id="uname"></span></h3>
+
+<div class="menu">
+
+<button id="menuAttendance" onclick="show('attendanceBox')">Attendance</button>
+
+<button id="menuLeave" onclick="show('leaveBox')">Apply Leave</button>
+
+<button id="menuBPM" onclick="show('bpmPanel')" style="display:none;">BPM Approvals</button>
+
+<button id="menuBlock" onclick="show('blockPanel')" style="display:none;">Block Approvals</button>
+
+<button id="menuReports" onclick="show('reportPanel')" style="display:none;">Reports</button>
+
+<button class="logout" onclick="logout()">Logout</button>
+
+</div>
+
+
+
+<div class="box hide" id="attendanceBox">
+
+<h3>Mark Attendance</h3>
+
 <button onclick="markIn()">Mark IN</button>
 <button onclick="markOut()">Mark OUT</button>
-<button onclick="showLeave()">Apply Leave</button>
-<button class="logout" onclick="logout()">Logout</button>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
 </div>
+
+
 
 <div class="box hide" id="leaveBox">
+
 <h3>Apply Leave</h3>
-From:<input type="date" id="from">
-To:<input type="date" id="to">
-Reason:<input id="reason">
-<button onclick="applyLeave()">Submit</button>
-<button onclick="$('#leaveBox').hide()">Back</button>
-</div>
+
+From:
+<input id="from">
+
+To:
+<input id="to">
+
+Reason:
+<input id="reason">
+
+<button onclick="applyLeave()">Apply</button>
+
+<button class="backBtn" onclick="backHome()">Back</button>
 
 </div>
+
+
+
+<div class="box hide" id="bpmPanel">
+
+<h3>BPM – Leave Approvals</h3>
+
+<button onclick="loadLeaves()">Load Leave Requests</button>
+
+<table id="bpmLeaveTable"></table>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
+</div>
+
+
+
+<div class="box hide" id="blockPanel">
+
+<h3>Block – Final Approvals</h3>
+
+<button onclick="loadLeaves()">Load All Requests</button>
+
+<table id="blockLeaveTable"></table>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
+</div>
+
+
+
+<div class="box hide" id="reportPanel">
+
+<h3>Block Reports</h3>
+
+<button onclick="loadReport()">Load Attendance Report</button>
+
+<table id="reportTable"></table>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
+</div>
+
+
+</div>
+
+
 
 <script>
 
-var URL="https://script.google.com/macros/s/AKfycbxRddq72DaY_bsZQlsDfkpWdgWRtP8laBIm4-Zh2UFgMPfKn9AKj_NuILRg-XKl95T9PQ/exec";
-var userid="";
+var URL = "https://script.google.com/macros/s/AKfycbyQjryWP-sAoWt_eHCEmjH_lgpUP40pIFCPWkfPrKDetpfjIq1SHrCcxeeG6KvcCmAsqw/exec";
 
-function showMsg(msg,type){
-$("#msg").html(msg).removeClass().addClass(type);
+var userid = "";
+var userRole = "";
+
+
+function showPopup(msg,type){
+
+$("#popMsg").html(msg);
+
+if(type=="success")
+$("#popMsg").attr("class","success");
+else
+$("#popMsg").attr("class","error");
+
+$("#popup").show();
+
 }
+
+
 
 function login(){
 
+var id = $("#userid").val().trim();
+var pass = $("#password").val().trim();
+
+if(id == ""){
+showPopup("Please Enter User ID","error");
+return;
+}
+
+if(pass == ""){
+showPopup("Please Enter Password","error");
+return;
+}
+
 $.post(URL,{
+
 action:"login",
-userid:$("#userid").val(),
-password:$("#password").val()
+userid:id,
+password:pass
+
 },function(res){
 
-if(res.status=="ok"){
-userid=$("#userid").val();
-$("#uname").text(res.name+" ("+res.role+")");
+var r = JSON.parse(res);
+
+if(r.status == "ok"){
+
+userid = id;
+userRole = r.role;
+
+$("#uname").html(r.name + " ("+ r.role +")");
+
 $("#loginBox").hide();
 $("#mainPanel").show();
-}else{
-showMsg("Invalid Login","error");
+
+applyRoleInterface(r.role);
+
+showPopup("Login Successful","success");
+
+}
+else{
+showPopup("Invalid Login","error");
 }
 
-},"json");
+});
+
 }
+
+
+
+function applyRoleInterface(role){
+
+$("#menuAttendance").hide();
+$("#menuLeave").hide();
+$("#menuBPM").hide();
+$("#menuBlock").hide();
+$("#menuReports").hide();
+
+
+if(role == "CADRE"){
+
+$("#menuAttendance").show();
+$("#menuLeave").show();
+
+}
+
+else if(role == "BPM"){
+
+$("#menuBPM").show();
+
+}
+
+else if(role == "BLOCK"){
+
+$("#menuBPM").show();
+$("#menuBlock").show();
+$("#menuReports").show();
+
+}
+
+}
+
+
+
+function show(id){
+
+$(".box").hide();
+$("#"+id).show();
+
+}
+
+
+
+function backHome(){
+
+$(".box").hide();
+
+}
+
+
+
+function logout(){
+
+location.reload();
+
+}
+
+
 
 function markIn(){
 
-navigator.geolocation.getCurrentPosition(function(pos){
+navigator.geolocation.getCurrentPosition(function(p){
 
 $.post(URL,{
+
 action:"markIn",
 userid:userid,
-lat:pos.coords.latitude,
-lon:pos.coords.longitude
+lat:p.coords.latitude,
+lon:p.coords.longitude
+
 },function(res){
-alert(res.message);
-},"json");
+
+showPopup(res,"success");
 
 });
+
+});
+
 }
+
+
 
 function markOut(){
 
-navigator.geolocation.getCurrentPosition(function(pos){
+navigator.geolocation.getCurrentPosition(function(p){
 
 $.post(URL,{
+
 action:"markOut",
 userid:userid,
-lat:pos.coords.latitude,
-lon:pos.coords.longitude
+lat:p.coords.latitude,
+lon:p.coords.longitude
+
 },function(res){
-alert(res.message);
-},"json");
+
+showPopup(res,"success");
 
 });
+
+});
+
 }
 
-function showLeave(){
-$("#leaveBox").show();
-}
+
 
 function applyLeave(){
 
+var reason = $("#reason").val();
+
+if(reason.trim()==""){
+
+showPopup("Reason Required","error");
+return;
+
+}
+
 $.post(URL,{
+
 action:"applyLeave",
 userid:userid,
 from:$("#from").val(),
 to:$("#to").val(),
-reason:$("#reason").val()
+reason:reason
+
 },function(res){
-alert(res.message);
-},"json");
+
+showPopup(res,"success");
+
+});
 
 }
 
-function logout(){
-location.reload();
+
+
+function loadLeaves(){
+
+$.post(URL,{action:"getLeaves"},function(res){
+
+var d = JSON.parse(res);
+
+var html = "<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr>";
+
+for(var i=1;i<d.length;i++){
+
+html += "<tr>";
+html += "<td>"+d[i][0]+"</td>";
+html += "<td>"+d[i][1]+"</td>";
+html += "<td>"+d[i][2]+"</td>";
+html += "<td>"+d[i][3]+"</td>";
+html += "<td>"+d[i][4]+"</td>";
+html += "<td>"+d[i][7]+"</td>";
+html += "</tr>";
+
 }
+
+$("#bpmLeaveTable").html(html);
+$("#blockLeaveTable").html(html);
+
+});
+
+}
+
+
+
+function loadReport(){
+
+$.post(URL,{action:"getReport"},function(res){
+
+var d = JSON.parse(res);
+
+var html="<tr>";
+
+for(var i=0;i<d[0].length;i++)
+html+="<th>"+d[0][i]+"</th>";
+
+html+="</tr>";
+
+for(var i=1;i<d.length;i++){
+
+html+="<tr>";
+
+for(var j=0;j<d[i].length;j++)
+html+="<td>"+d[i][j]+"</td>";
+
+html+="</tr>";
+
+}
+
+$("#reportTable").html(html);
+
+});
+
+}
+
 
 </script>
 
