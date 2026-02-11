@@ -1,6 +1,6 @@
-<!DOCTYPE html>
 <html>
 <head>
+
 <title>NRLM Geo Attendance System</title>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -10,46 +10,44 @@
 body{
   font-family: Arial;
   background:#eef2f7;
-}
-
-.header{
-  background:#2b7cff;
-  color:white;
-  padding:10px;
   text-align:center;
-  border-radius:5px;
-}
-
-.container{
-  margin:10px;
 }
 
 .box{
   background:white;
-  padding:15px;
-  margin-top:10px;
+  padding:20px;
+  margin:20px auto;
   border-radius:10px;
-  box-shadow:0px 0px 10px #ccc;
+  box-shadow:0px 0px 10px #aaa;
+  width:90%;
+  max-width:600px;
 }
 
 input,select{
-  padding:8px;
+  padding:10px;
   margin:5px;
-  width:95%;
+  width:90%;
 }
 
 button{
   padding:10px;
   margin:5px;
-  width:98%;
+  width:95%;
   background:#2b7cff;
   color:white;
   border:none;
   border-radius:5px;
+  cursor:pointer;
+}
+
+.menu button{
+  width:auto;
+  margin:5px;
 }
 
 table{
   width:100%;
+  margin-top:10px;
   border-collapse:collapse;
 }
 
@@ -62,44 +60,35 @@ th,td{
   display:none;
 }
 
+.logout{
+  background:red;
+}
 
-/* ---- POPUP STYLE ---- */
+.backBtn{
+  background:green;
+}
 
-.popup{
-  display:none;
+#popup{
   position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.6);
-}
-
-.popupBox{
-  background:white;
-  width:80%;
-  margin:auto;
-  margin-top:30%;
+  top:30%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:#fff;
   padding:20px;
-  text-align:center;
   border-radius:10px;
+  box-shadow:0px 0px 15px #000;
+  display:none;
+  z-index:999;
 }
 
-.successPopup{
+.success{
   color:green;
-  font-size:20px;
-  font-weight:bold;
+  font-size:18px;
 }
 
-.errorPopup{
+.error{
   color:red;
-  font-size:20px;
-  font-weight:bold;
-}
-
-.popup button{
-  margin-top:15px;
-  width:50%;
+  font-size:18px;
 }
 
 </style>
@@ -108,15 +97,16 @@ th,td{
 
 <body>
 
-<div class="header">
-<h2>NRLM Geo Fencing Attendance System</h2>
+<h2>NRLM Geo Attendance Portal</h2>
+
+<div id="popup">
+  <p id="popMsg"></p>
+  <button onclick="$('#popup').hide()">OK</button>
 </div>
 
-<div class="container">
 
-
-<!-- LOGIN -->
 <div class="box" id="loginBox">
+
 <h3>Login</h3>
 
 <input id="userid" placeholder="User ID">
@@ -124,60 +114,105 @@ th,td{
 
 <button onclick="login()">Login</button>
 
-<div id="msg"></div>
 </div>
 
 
-
-<!-- MAIN PANEL -->
 <div id="mainPanel" class="hide">
 
-<div class="box">
 <h3>Welcome <span id="uname"></span></h3>
+
+<div class="menu">
+
+<button id="menuAttendance" onclick="show('attendanceBox')">Attendance</button>
+
+<button id="menuLeave" onclick="show('leaveBox')">Apply Leave</button>
+
+<button id="menuBPM" onclick="show('bpmPanel')" style="display:none;">BPM Approvals</button>
+
+<button id="menuBlock" onclick="show('blockPanel')" style="display:none;">Block Approvals</button>
+
+<button id="menuReports" onclick="show('reportPanel')" style="display:none;">Reports</button>
+
+<button class="logout" onclick="logout()">Logout</button>
+
 </div>
 
 
-<!-- ATTENDANCE -->
-<div class="box" id="attendanceBox">
 
-<h3>Attendance</h3>
+<div class="box hide" id="attendanceBox">
 
-<button onclick="markIn()">Mark In</button>
-<button onclick="markOut()">Mark Out</button>
+<h3>Mark Attendance</h3>
+
+<button onclick="markIn()">Mark IN</button>
+<button onclick="markOut()">Mark OUT</button>
+
+<button class="backBtn" onclick="backHome()">Back</button>
 
 </div>
 
 
-<!-- LEAVE -->
-<div class="box" id="leaveBox">
+
+<div class="box hide" id="leaveBox">
 
 <h3>Apply Leave</h3>
 
-From: <input type="date" id="from">
-To: <input type="date" id="to">
-Reason: <input id="reason">
+From:
+<input id="from">
+
+To:
+<input id="to">
+
+Reason:
+<input id="reason">
 
 <button onclick="applyLeave()">Apply</button>
 
+<button class="backBtn" onclick="backHome()">Back</button>
+
 </div>
 
 
+
+<div class="box hide" id="bpmPanel">
+
+<h3>BPM – Leave Approvals</h3>
+
+<button onclick="loadLeaves()">Load Leave Requests</button>
+
+<table id="bpmLeaveTable"></table>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
 </div>
+
+
+
+<div class="box hide" id="blockPanel">
+
+<h3>Block – Final Approvals</h3>
+
+<button onclick="loadLeaves()">Load All Requests</button>
+
+<table id="blockLeaveTable"></table>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
 </div>
 
 
 
-<!-- POPUP MESSAGE BOX -->
+<div class="box hide" id="reportPanel">
 
-<div class="popup" id="popup">
+<h3>Block Reports</h3>
 
-  <div class="popupBox">
+<button onclick="loadReport()">Load Attendance Report</button>
 
-    <div id="popupMsg"></div>
+<table id="reportTable"></table>
 
-    <button onclick="closePopup()">OK</button>
+<button class="backBtn" onclick="backHome()">Back</button>
 
-  </div>
+</div>
+
 
 </div>
 
@@ -185,64 +220,69 @@ Reason: <input id="reason">
 
 <script>
 
-var URL="YOUR_APPS_SCRIPT_URL_HERE";
+var URL = "https://script.google.com/macros/s/AKfycbwT0XCgis-rzpjUsbvFNJ-kYVuVB3sx694Cr2XNpzBiZZUKreuV67vOzyWqd03nnDqD/exec";
 
-var userid="";
-var userRole="";
+var userid = "";
+var userRole = "";
 
 
+function showPopup(msg,type){
 
-// SHOW POPUP FUNCTION
-
-function showPopup(msg, type){
-
-$("#popupMsg").removeClass();
+$("#popMsg").html(msg);
 
 if(type=="success")
-  $("#popupMsg").addClass("successPopup");
+$("#popMsg").attr("class","success");
 else
-  $("#popupMsg").addClass("errorPopup");
+$("#popMsg").attr("class","error");
 
-$("#popupMsg").html(msg);
-
-$("#popup").fadeIn();
+$("#popup").show();
 
 }
 
 
-function closePopup(){
-$("#popup").fadeOut();
-}
-
-
-
-// LOGIN
 
 function login(){
+
+var id = $("#userid").val().trim();
+var pass = $("#password").val().trim();
+
+if(id == ""){
+showPopup("Please Enter User ID","error");
+return;
+}
+
+if(pass == ""){
+showPopup("Please Enter Password","error");
+return;
+}
 
 $.post(URL,{
 
 action:"login",
-userid:$("#userid").val(),
-password:$("#password").val()
+userid:id,
+password:pass
 
 },function(res){
 
-var r=JSON.parse(res);
+var r = JSON.parse(res);
 
-if(r.status=="ok"){
+if(r.status == "ok"){
 
-userid=$("#userid").val();
+userid = id;
+userRole = r.role;
 
-$("#uname").html(r.name);
+$("#uname").html(r.name + " ("+ r.role +")");
 
 $("#loginBox").hide();
 $("#mainPanel").show();
 
-}else{
+applyRoleInterface(r.role);
 
-showPopup("Login Failed", "error");
+showPopup("Login Successful","success");
 
+}
+else{
+showPopup("Invalid Login","error");
 }
 
 });
@@ -251,38 +291,79 @@ showPopup("Login Failed", "error");
 
 
 
-// GET LOCATION
+function applyRoleInterface(role){
 
-function getLocation(cb){
+$("#menuAttendance").hide();
+$("#menuLeave").hide();
+$("#menuBPM").hide();
+$("#menuBlock").hide();
+$("#menuReports").hide();
 
-navigator.geolocation.getCurrentPosition(function(p){
 
-cb(p.coords.latitude,p.coords.longitude);
+if(role == "CADRE"){
 
-});
+$("#menuAttendance").show();
+$("#menuLeave").show();
+
+}
+
+else if(role == "BPM"){
+
+$("#menuBPM").show();
+
+}
+
+else if(role == "BLOCK"){
+
+$("#menuBPM").show();
+$("#menuBlock").show();
+$("#menuReports").show();
+
+}
+
 }
 
 
 
-// MARK IN WITH POPUP
+function show(id){
+
+$(".box").hide();
+$("#"+id).show();
+
+}
+
+
+
+function backHome(){
+
+$(".box").hide();
+
+}
+
+
+
+function logout(){
+
+location.reload();
+
+}
+
+
 
 function markIn(){
 
-getLocation(function(lat,lon){
+navigator.geolocation.getCurrentPosition(function(p){
 
 $.post(URL,{
 
 action:"markIn",
 userid:userid,
-lat:lat,
-lon:lon
+lat:p.coords.latitude,
+lon:p.coords.longitude
 
 },function(res){
 
-if(res.includes("IN at"))
-  showPopup(res, "success");
-else
-  showPopup(res, "error");
+showPopup(res,"success");
 
 });
 
@@ -292,25 +373,20 @@ else
 
 
 
-// MARK OUT WITH POPUP
-
 function markOut(){
 
-getLocation(function(lat,lon){
+navigator.geolocation.getCurrentPosition(function(p){
 
 $.post(URL,{
 
 action:"markOut",
 userid:userid,
-lat:lat,
-lon:lon
+lat:p.coords.latitude,
+lon:p.coords.longitude
 
 },function(res){
 
-if(res.includes("OUT Marked"))
-  showPopup(res, "success");
-else
-  showPopup(res, "error");
+showPopup(res,"success");
 
 });
 
@@ -320,13 +396,13 @@ else
 
 
 
-// APPLY LEAVE WITH POPUP
-
 function applyLeave(){
 
-if($("#reason").val()==""){
+var reason = $("#reason").val();
 
-showPopup("Reason Required", "error");
+if(reason.trim()==""){
+
+showPopup("Reason Required","error");
 return;
 
 }
@@ -337,11 +413,11 @@ action:"applyLeave",
 userid:userid,
 from:$("#from").val(),
 to:$("#to").val(),
-reason:$("#reason").val()
+reason:reason
 
 },function(res){
 
-showPopup(res, "success");
+showPopup(res,"success");
 
 });
 
@@ -349,19 +425,66 @@ showPopup(res, "success");
 
 
 
-$(document).ready(function(){
+function loadLeaves(){
 
-$("button").hover(function(){
+$.post(URL,{action:"getLeaves"},function(res){
 
-$(this).css("background","#1e5fcc");
+var d = JSON.parse(res);
 
-},function(){
+var html = "<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr>";
 
-$(this).css("background","#2b7cff");
+for(var i=1;i<d.length;i++){
+
+html += "<tr>";
+html += "<td>"+d[i][0]+"</td>";
+html += "<td>"+d[i][1]+"</td>";
+html += "<td>"+d[i][2]+"</td>";
+html += "<td>"+d[i][3]+"</td>";
+html += "<td>"+d[i][4]+"</td>";
+html += "<td>"+d[i][7]+"</td>";
+html += "</tr>";
+
+}
+
+$("#bpmLeaveTable").html(html);
+$("#blockLeaveTable").html(html);
 
 });
 
+}
+
+
+
+function loadReport(){
+
+$.post(URL,{action:"getReport"},function(res){
+
+var d = JSON.parse(res);
+
+var html="<tr>";
+
+for(var i=0;i<d[0].length;i++)
+html+="<th>"+d[0][i]+"</th>";
+
+html+="</tr>";
+
+for(var i=1;i<d.length;i++){
+
+html+="<tr>";
+
+for(var j=0;j<d[i].length;j++)
+html+="<td>"+d[i][j]+"</td>";
+
+html+="</tr>";
+
+}
+
+$("#reportTable").html(html);
+
 });
+
+}
+
 
 </script>
 
