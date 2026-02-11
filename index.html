@@ -1,110 +1,531 @@
+<!DOCTYPE html>
 <html>
 <head>
-<link rel="stylesheet" href="style.css">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<title>NRLM Geo Attendance System</title>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+
+body{
+  font-family: Arial;
+  background:#eef2f7;
+}
+
+.header{
+  background:#2b7cff;
+  color:white;
+  padding:10px;
+  text-align:center;
+  border-radius:5px;
+}
+
+.container{
+  margin:10px;
+}
+
+.box{
+  background:white;
+  padding:15px;
+  margin-top:10px;
+  border-radius:10px;
+  box-shadow:0px 0px 10px #ccc;
+}
+
+input,select{
+  padding:8px;
+  margin:5px;
+  width:95%;
+}
+
+button{
+  padding:10px;
+  margin:5px;
+  width:98%;
+  background:#2b7cff;
+  color:white;
+  border:none;
+  border-radius:5px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:8px;
+  border:1px solid #ccc;
+}
+
+.hide{
+  display:none;
+}
+
+.success{
+  color:green;
+}
+
+.error{
+  color:red;
+}
+
+.menu button{
+  width:48%;
+}
+
+</style>
 
 </head>
 
 <body>
 
-<div class="box">
+<div class="header">
+<h2>NRLM Geo Fencing Attendance System</h2>
+</div>
 
-<h2>NRLM Attendance System</h2>
+<div class="container">
 
-<input id="uid" placeholder="User ID">
-<input id="pass" type="password" placeholder="Password">
+<!-- LOGIN BOX -->
+<div class="box" id="loginBox">
+<h3>Login</h3>
+
+<input id="userid" placeholder="User ID">
+<input id="password" type="password" placeholder="Password">
 
 <button onclick="login()">Login</button>
 
-<p id="msg"></p>
+<div id="msg"></div>
+</div>
+
+
+
+<!-- MAIN PANEL -->
+<div id="mainPanel" class="hide">
+
+<div class="box">
+<h3>Welcome <span id="uname"></span></h3>
+
+<div class="menu">
+
+<button onclick="show('attendanceBox')" id="menuAttendance">Attendance</button>
+
+<button onclick="show('leaveBox')" id="menuLeave">Apply Leave</button>
+
+<button onclick="show('reportBox')" id="menuReport">Reports</button>
+
+<button onclick="show('bpmBox')" id="menuBPM">BPM Dashboard</button>
+
+<button onclick="show('blockBox')" id="menuBlock">Block Dashboard</button>
+
+<button onclick="show('summaryBox')" id="menuSummary">Monthly Summary</button>
 
 </div>
 
+</div>
+
+
+
+<!-- ATTENDANCE -->
+<div class="box hide" id="attendanceBox">
+
+<h3>Attendance</h3>
+
+<button onclick="markIn()">Mark In</button>
+<button onclick="markOut()">Mark Out</button>
+
+<div id="attMsg"></div>
+
+</div>
+
+
+
+<!-- LEAVE -->
+<div class="box hide" id="leaveBox">
+
+<h3>Apply Leave</h3>
+
+From: <input type="date" id="from">
+To: <input type="date" id="to">
+Reason: <input id="reason">
+
+<button onclick="applyLeave()">Apply</button>
+
+<div id="leaveMsg"></div>
+
+</div>
+
+
+
+<!-- REPORT -->
+<div class="box hide" id="reportBox">
+
+<h3>Attendance Report</h3>
+
+<button onclick="loadReport()">Load Report</button>
+
+<table id="reportTable"></table>
+
+</div>
+
+
+
+<!-- BPM -->
+<div class="box hide" id="bpmBox">
+
+<h3>BPM Approvals</h3>
+
+<button onclick="loadLeaves()">Load Leaves</button>
+
+<table id="leaveTable"></table>
+
+</div>
+
+
+
+<!-- BLOCK -->
+<div class="box hide" id="blockBox">
+
+<h3>Block Approvals</h3>
+
+<button onclick="loadLeaves()">Load Leaves</button>
+
+<table id="leaveTable2"></table>
+
+</div>
+
+
+
+<!-- MONTHLY SUMMARY -->
+<div class="box hide" id="summaryBox">
+
+<h3>Monthly Summary</h3>
+
+<input id="month" placeholder="MM/yyyy">
+<button onclick="summary()">View</button>
+
+<table id="summaryTable"></table>
+
+</div>
+
+
+
+</div>
+</div>
+
+
+
 <script>
 
-var api="https://script.google.com/macros/s/AKfycbynQe3ZPuhKXdREyOgFR_lZxPA_-GmzVL3zp2IWvubo3TLH5W9zTEQczl3dhTzro8WRIg/exec";
+var URL="https://script.google.com/macros/s/AKfycbynQe3ZPuhKXdREyOgFR_lZxPA_-GmzVL3zp2IWvubo3TLH5W9zTEQczl3dhTzro8WRIg/exec";
 
+var userid="";
+var userRole="";
+
+function show(id){
+  $(".box").addClass("hide");
+  $("#"+id).removeClass("hide");
+}
+
+
+
+// LOGIN WITH ROLE CONTROL
 function login(){
 
-fetch(api,{
-method:"POST",
-body:new URLSearchParams({
+$.post(URL,{
+
 action:"login",
-userid:uid.value,
-password:pass.value})
-})
-.then(r=>r.text())
-.then(d=>{
+userid:$("#userid").val(),
+password:$("#password").val()
 
-var res=JSON.parse(d);
+},function(res){
 
-if(res.status=="ok"){
+var r=JSON.parse(res);
 
-localStorage.setItem("uid",uid.value);
-localStorage.setItem("role",res.role);
+if(r.status=="ok"){
 
-if(res.role=="CADRE") location="cadre.html";
-if(res.role=="BPM") location="bpm.html";
-if(res.role=="BLOCK") location="block.html";
+userid=$("#userid").val();
+userRole=r.cadre;
+
+$("#uname").html(r.name+" ("+r.cadre+")");
+
+$("#loginBox").hide();
+$("#mainPanel").show();
+
+applyRoleAccess(userRole);
+
+}else{
+
+$("#msg").html("<span class='error'>Login Failed</span>");
 
 }
-else msg.innerHTML="Login Failed";
 
 });
 
 }
 
-</script>
 
-  <script>
+
+// ROLE BASED INTERFACE
+function applyRoleAccess(role){
+
+$("#menuReport").hide();
+$("#menuBPM").hide();
+$("#menuBlock").hide();
+$("#menuSummary").hide();
+
+if(role=="CC" || role=="MOBILIZER" || role=="CADRE"){
+
+$("#menuAttendance").show();
+$("#menuLeave").show();
+
+}
+
+else if(role=="BPM"){
+
+$("#menuAttendance").show();
+$("#menuLeave").show();
+$("#menuReport").show();
+$("#menuBPM").show();
+
+}
+
+else if(role=="BLOCK"){
+
+$("#menuAttendance").show();
+$("#menuLeave").show();
+$("#menuReport").show();
+$("#menuBPM").show();
+$("#menuBlock").show();
+$("#menuSummary").show();
+
+}
+
+else{
+
+$("#menuAttendance").show();
+$("#menuLeave").show();
+
+}
+
+}
+
+
+
+// GEO LOCATION
+function getLocation(cb){
+
+navigator.geolocation.getCurrentPosition(function(p){
+
+cb(p.coords.latitude,p.coords.longitude);
+
+});
+}
+
+
+
+// MARK IN
+function markIn(){
+
+getLocation(function(lat,lon){
+
+$.post(URL,{
+action:"markIn",
+userid:userid,
+lat:lat,
+lon:lon
+},function(res){
+
+$("#attMsg").html(res);
+
+});
+
+});
+
+}
+
+
+
+// MARK OUT
+function markOut(){
+
+getLocation(function(lat,lon){
+
+$.post(URL,{
+action:"markOut",
+userid:userid,
+lat:lat,
+lon:lon
+},function(res){
+
+$("#attMsg").html(res);
+
+});
+
+});
+
+}
+
+
+
+// APPLY LEAVE
+function applyLeave(){
+
+if($("#reason").val()==""){
+alert("Reason Required");
+return;
+}
+
+$.post(URL,{
+action:"applyLeave",
+userid:userid,
+from:$("#from").val(),
+to:$("#to").val(),
+reason:$("#reason").val()
+},function(res){
+
+$("#leaveMsg").html(res);
+
+});
+
+}
+
+
+
+// LOAD REPORT
+function loadReport(){
+
+$.post(URL,{action:"getReport"},function(res){
+
+var d=JSON.parse(res);
+
+var html="<tr><th>Date</th><th>User</th><th>Cadre</th><th>In</th><th>Out</th><th>Status</th></tr>";
+
+for(i=1;i<d.length;i++){
+
+html+="<tr>"+
+"<td>"+d[i][0]+"</td>"+
+"<td>"+d[i][1]+"</td>"+
+"<td>"+d[i][2]+"</td>"+
+"<td>"+d[i][3]+"</td>"+
+"<td>"+d[i][7]+"</td>"+
+"<td>"+d[i][10]+"</td>"+
+"</tr>";
+}
+
+$("#reportTable").html(html);
+
+});
+}
+
+
+
+// LOAD LEAVES
+function loadLeaves(){
+
+$.post(URL,{action:"getLeaves"},function(res){
+
+var d=JSON.parse(res);
+
+var html="<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>BPM</th><th>Block</th></tr>";
+
+for(i=1;i<d.length;i++){
+
+html+="<tr>"+
+"<td>"+d[i][0]+"</td>"+
+"<td>"+d[i][1]+"</td>"+
+"<td>"+d[i][2]+"</td>"+
+"<td>"+d[i][3]+"</td>"+
+"<td>"+d[i][4]+"</td>"+
+"<td><button onclick=approveBPM('"+d[i][0]+"','Approved')>Approve</button></td>"+
+"<td><button onclick=approveBlock('"+d[i][0]+"','Approved')>Final Approve</button></td>"+
+"</tr>";
+}
+
+$("#leaveTable").html(html);
+$("#leaveTable2").html(html);
+
+});
+}
+
+
+
+// BPM APPROVE
+function approveBPM(id,s){
+
+$.post(URL,{
+action:"approveBPM",
+leaveid:id,
+status:s
+},function(res){
+
+alert(res);
+loadLeaves();
+
+});
+
+}
+
+
+
+// BLOCK APPROVE
+function approveBlock(id,s){
+
+$.post(URL,{
+action:"approveBlock",
+leaveid:id,
+status:s
+},function(res){
+
+alert(res);
+loadLeaves();
+
+});
+
+}
+
+
+
+// MONTHLY SUMMARY
+function summary(){
+
+$.post(URL,{
+action:"monthlySummary",
+month:$("#month").val()
+},function(res){
+
+var d=JSON.parse(res);
+
+var html="<tr><th>User</th><th>Days Present</th></tr>";
+
+for(var u in d){
+
+html+="<tr><td>"+u+"</td><td>"+d[u].present+"</td></tr>";
+}
+
+$("#summaryTable").html(html);
+
+});
+
+}
+
 
 $(document).ready(function(){
 
-  $(".box").addClass("fade");
+$("button").hover(function(){
 
-  $("button").click(function(){
-     $(this).css("opacity","0.8");
-     setTimeout(()=>$(this).css("opacity","1"),200);
-  });
+$(this).css("background","#1e5fcc");
 
-  $("input, textarea, select").focus(function(){
-     $(this).css("border","2px solid #2b7cff");
-  });
+},function(){
 
-  $("input, textarea, select").blur(function(){
-     $(this).css("border","1px solid #ccc");
-  });
+$(this).css("background","#2b7cff");
 
 });
 
+});
 
-function showMessage(msg,type){
-
-  var css = type=="success" ? "alert success" : "alert error";
-
-  $("#msg").html("<div class='"+css+"'>"+msg+"</div>");
-
-  setTimeout(()=>$("#msg").html(""),3000);
-}
-
-
-function showLoader(){
-  $(".loader").show();
-}
-
-function hideLoader(){
-  $(".loader").hide();
-}
 
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
