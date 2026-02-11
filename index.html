@@ -1,157 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>NRLM Geo Attendance System</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<style>
-body{
-  font-family:Segoe UI;
-  background:#f4f6fa;
-  margin:0;
-}
-header{
-  background:#1e3a8a;
-  color:white;
-  padding:15px;
-  text-align:center;
-  font-size:20px;
-}
-.container{
-  padding:20px;
-}
-.card{
-  background:white;
-  padding:20px;
-  margin-bottom:15px;
-  border-radius:8px;
-  box-shadow:0 3px 10px rgba(0,0,0,0.1);
-}
-input,select{
-  width:100%;
-  padding:10px;
-  margin:5px 0;
-}
-button{
-  padding:10px;
-  border:none;
-  border-radius:5px;
-  cursor:pointer;
-  margin-top:5px;
-}
-.primary{background:#2563eb;color:white;}
-.danger{background:#dc2626;color:white;}
-.success{background:#16a34a;color:white;}
-.logout{float:right;background:#dc2626;color:white;}
-.hidden{display:none;}
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-th,td{
-  border:1px solid #ccc;
-  padding:8px;
-}
-th{background:#e5e7eb;}
-.popup{
-  position:fixed;
-  top:30%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:white;
-  padding:20px;
-  border-radius:8px;
-  box-shadow:0 0 20px rgba(0,0,0,0.4);
-  display:none;
-}
-</style>
-</head>
-
-<body>
-
-<header>
-NRLM Geo Attendance System
-<button class="logout hidden" onclick="logout()" id="logoutBtn">Logout</button>
-</header>
-
-<div class="container">
-
-<!-- LOGIN -->
-<div class="card" id="loginCard">
-<h3>Login</h3>
-<input id="userId" placeholder="User ID">
-<input id="password" type="password" placeholder="Password">
-<button class="primary" onclick="login()">Login</button>
-</div>
-
-<!-- DASHBOARD -->
-<div id="dashboard" class="hidden">
-
-<div class="card">
-<h3>Welcome <span id="userName"></span></h3>
-</div>
-
-<!-- CADRE PANEL -->
-<div id="cadrePanel" class="hidden">
-
-<div class="card">
-<h3>Attendance</h3>
-<button class="primary" onclick="markIn()">Mark IN</button>
-<button class="success" onclick="markOut()">Mark OUT</button>
-</div>
-
-<div class="card">
-<h3>Apply Leave</h3>
-<input type="date" id="fromDate">
-<input type="date" id="toDate">
-<input id="reason" placeholder="Reason">
-<button class="primary" onclick="applyLeave()">Submit Leave</button>
-</div>
-
-</div>
-
-<!-- BPM PANEL -->
-<div id="bpmPanel" class="hidden">
-<div class="card">
-<h3>Pending Leave Requests</h3>
-<button onclick="loadLeaves()">Refresh</button>
-<table id="leaveTable"></table>
-</div>
-</div>
-
-<!-- BLOCK PANEL -->
-<div id="blockPanel" class="hidden">
-<div class="card">
-<h3>Final Leave Approval</h3>
-<button onclick="loadLeaves()">Refresh</button>
-<table id="leaveTableBlock"></table>
-</div>
-
-<div class="card">
-<h3>Monthly Attendance Report</h3>
-<input type="month" id="reportMonth">
-<button onclick="loadMonthlyReport()">Generate</button>
-<div id="reportResult"></div>
-</div>
-</div>
-
-</div>
-</div>
-
-<div class="popup" id="popup">
-<p id="popupMsg"></p>
-<button onclick="closePopup()">OK</button>
-</div>
-
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzVJ0QbERmm6EAc1wHb9vdjq9npFFoLRKNKC9gF1ZpnR6nD86NRPKNJaf3cASGa91GjtQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzvnmxeudfLW0-pwvBOp-gwEqzSozxI5OzWri4k0pQBS39Xh8TGaS52bg4QOtmc1V6k/exec";
 
 let currentUser = {};
 let userRole = "";
 
-/* POPUP */
+/* ---------------- POPUP ---------------- */
 function showPopup(msg){
   document.getElementById("popupMsg").innerHTML = msg;
   document.getElementById("popup").style.display="block";
@@ -160,210 +14,275 @@ function closePopup(){
   document.getElementById("popup").style.display="none";
 }
 
-/* LOGIN */
+/* ---------------- LOGIN ---------------- */
 async function login(){
+  try{
+    const res = await fetch(API_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        action:"login",
+        userId:userId.value.trim(),
+        password:password.value.trim()
+      })
+    });
 
-  const res = await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"login",
-      userId:userId.value.trim(),
-      password:password.value.trim()
-    })
-  });
+    const data = await res.json();
 
-  const data = await res.json();
+    if(data.status=="success"){
 
-  if(data.status=="success"){
+      currentUser = data;
+      userRole = data.role.toUpperCase();
 
-    currentUser = data;
-    userRole = data.role.toUpperCase();
+      loginCard.classList.add("hidden");
+      dashboard.classList.remove("hidden");
+      logoutBtn.classList.remove("hidden");
 
-    loginCard.classList.add("hidden");
-    dashboard.classList.remove("hidden");
-    logoutBtn.classList.remove("hidden");
+      userName.innerText = data.name + " ("+data.role+")";
 
-    userName.innerText = data.name + " ("+data.role+")";
+      if(userRole=="CADRE") cadrePanel.classList.remove("hidden");
+      if(userRole=="BPM") bpmPanel.classList.remove("hidden");
+      if(userRole=="BLOCK") blockPanel.classList.remove("hidden");
 
-    if(userRole=="CADRE"){
-      cadrePanel.classList.remove("hidden");
+      showPopup("Login Successful");
+
+    }else{
+      showPopup(data.message);
     }
-    else if(userRole=="BPM"){
-      bpmPanel.classList.remove("hidden");
-    }
-    else if(userRole=="BLOCK"){
-      blockPanel.classList.remove("hidden");
-    }
 
-    showPopup("Login Successful");
-
-  }else{
-    showPopup(data.message);
+  }catch(err){
+    showPopup("Network Error. Check Internet or Apps Script Deployment.");
   }
 }
 
-/* MARK IN */
+/* ---------------- GEO LOCATION CORE ---------------- */
+function getStableLocation(callback){
+
+  if(!navigator.geolocation){
+    showPopup("Geolocation not supported");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(position){
+
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+
+      console.log("Accuracy:", accuracy);
+
+      // Reject weak GPS
+      if(accuracy > 50){
+        showPopup("⚠ Weak GPS Signal ("+Math.round(accuracy)+"m). Move to open area.");
+        return;
+      }
+
+      callback(lat,lng);
+
+    },
+
+    function(error){
+      showPopup("Location permission denied or unavailable.");
+    },
+
+    {
+      enableHighAccuracy:true,
+      timeout:15000,
+      maximumAge:0
+    }
+
+  );
+}
+
+/* ---------------- MARK IN ---------------- */
 function markIn(){
-navigator.geolocation.getCurrentPosition(async pos=>{
 
-const res = await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({
-action:"markIn",
-userId:currentUser.userId,
-name:currentUser.name,
-role:currentUser.role,
-cadre:currentUser.cadre,
-locationId:currentUser.locationId,
-lat:pos.coords.latitude,
-lng:pos.coords.longitude
-})
-});
+  getStableLocation(async function(lat,lng){
 
-const data = await res.json();
+    try{
+      const res = await fetch(API_URL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          action:"markIn",
+          userId:currentUser.userId,
+          name:currentUser.name,
+          role:currentUser.role,
+          cadre:currentUser.cadre,
+          locationId:currentUser.locationId,
+          lat:lat,
+          lng:lng
+        })
+      });
 
-if(data.status=="success"){
-showPopup("Marked IN at "+data.location+"<br>"+data.address);
-}else{
-showPopup(data.message);
+      const data = await res.json();
+
+      if(data.status=="success"){
+        showPopup("✅ Marked IN at "+data.location+"<br>"+data.address);
+      }else{
+        showPopup(data.message);
+      }
+
+    }catch(err){
+      showPopup("Network Error while Mark IN");
+    }
+
+  });
 }
 
-});
-}
-
-/* MARK OUT */
+/* ---------------- MARK OUT ---------------- */
 function markOut(){
-navigator.geolocation.getCurrentPosition(async pos=>{
 
-const res = await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({
-action:"markOut",
-userId:currentUser.userId,
-lat:pos.coords.latitude,
-lng:pos.coords.longitude
-})
-});
+  getStableLocation(async function(lat,lng){
 
-const data = await res.json();
-showPopup(data.message);
+    try{
+      const res = await fetch(API_URL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          action:"markOut",
+          userId:currentUser.userId,
+          lat:lat,
+          lng:lng
+        })
+      });
 
-});
+      const data = await res.json();
+      showPopup(data.message);
+
+    }catch(err){
+      showPopup("Network Error while Mark OUT");
+    }
+
+  });
 }
 
-/* APPLY LEAVE */
+/* ---------------- APPLY LEAVE ---------------- */
 async function applyLeave(){
 
-if(!fromDate.value || !reason.value){
-showPopup("Fill All Fields");
-return;
+  if(!fromDate.value || !reason.value){
+    showPopup("Fill All Fields");
+    return;
+  }
+
+  try{
+    const res = await fetch(API_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        action:"applyLeave",
+        userId:currentUser.userId,
+        name:currentUser.name,
+        fromDate:fromDate.value,
+        toDate:toDate.value,
+        reason:reason.value
+      })
+    });
+
+    const data = await res.json();
+    showPopup(data.message);
+
+  }catch(err){
+    showPopup("Network Error while Applying Leave");
+  }
 }
 
-const res = await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({
-action:"applyLeave",
-userId:currentUser.userId,
-name:currentUser.name,
-fromDate:fromDate.value,
-toDate:toDate.value,
-reason:reason.value
-})
-});
-
-const data = await res.json();
-showPopup(data.message);
-
-}
-
-/* LOAD LEAVES */
+/* ---------------- LOAD LEAVES ---------------- */
 async function loadLeaves(){
 
-const res = await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({action:"getLeaves"})
-});
+  try{
+    const res = await fetch(API_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({action:"getLeaves"})
+    });
 
-const data = await res.json();
+    const data = await res.json();
 
-let html="<tr><th>User</th><th>From</th><th>Status</th><th>Action</th></tr>";
+    let html="<tr><th>User</th><th>From</th><th>Status</th><th>Action</th></tr>";
 
-data.forEach(l=>{
+    data.forEach(l=>{
 
-if(userRole=="BPM" && l[6]=="Pending BPM"){
-html+=`<tr>
-<td>${l[2]}</td>
-<td>${l[3]}</td>
-<td>${l[6]}</td>
-<td>
-<button onclick="updateLeave('${l[0]}','Approved BPM')">Approve</button>
-<button onclick="updateLeave('${l[0]}','Rejected')">Reject</button>
-</td>
-</tr>`;
+      if(userRole=="BPM" && l[6]=="Pending BPM"){
+        html+=`<tr>
+        <td>${l[2]}</td>
+        <td>${l[3]}</td>
+        <td>${l[6]}</td>
+        <td>
+        <button onclick="updateLeave('${l[0]}','Approved BPM')">Approve</button>
+        <button onclick="updateLeave('${l[0]}','Rejected')">Reject</button>
+        </td></tr>`;
+      }
+
+      if(userRole=="BLOCK" && l[6]=="Pending Block"){
+        html+=`<tr>
+        <td>${l[2]}</td>
+        <td>${l[3]}</td>
+        <td>${l[6]}</td>
+        <td>
+        <button onclick="updateLeave('${l[0]}','Approved')">Approve</button>
+        <button onclick="updateLeave('${l[0]}','Rejected')">Reject</button>
+        </td></tr>`;
+      }
+
+    });
+
+    leaveTable.innerHTML=html;
+    leaveTableBlock.innerHTML=html;
+
+  }catch(err){
+    showPopup("Error loading leaves");
+  }
 }
 
-if(userRole=="BLOCK" && l[6]=="Pending Block"){
-html+=`<tr>
-<td>${l[2]}</td>
-<td>${l[3]}</td>
-<td>${l[6]}</td>
-<td>
-<button onclick="updateLeave('${l[0]}','Approved')">Approve</button>
-<button onclick="updateLeave('${l[0]}','Rejected')">Reject</button>
-</td>
-</tr>`;
-}
-
-});
-
-leaveTable.innerHTML=html;
-leaveTableBlock.innerHTML=html;
-
-}
-
-/* UPDATE LEAVE */
+/* ---------------- UPDATE LEAVE ---------------- */
 async function updateLeave(id,status){
 
-await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({
-action:"updateLeave",
-leaveId:id,
-status:status
-})
-});
+  await fetch(API_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      action:"updateLeave",
+      leaveId:id,
+      status:status
+    })
+  });
 
-showPopup("Updated");
-loadLeaves();
+  showPopup("Updated");
+  loadLeaves();
 }
 
-/* MONTHLY REPORT */
+/* ---------------- MONTHLY REPORT ---------------- */
 async function loadMonthlyReport(){
 
-const res = await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({
-action:"getMonthlyReport",
-month:reportMonth.value
-})
-});
+  try{
+    const res = await fetch(API_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        action:"getMonthlyReport",
+        month:reportMonth.value
+      })
+    });
 
-const data = await res.json();
+    const data = await res.json();
 
-let html="";
-for(let u in data.report){
-html+=`<p>${data.report[u].name} - ${data.report[u].presentDays} Days</p>`;
-}
+    let html="";
+    for(let u in data.report){
+      html+=`<p><b>${data.report[u].name}</b> - ${data.report[u].presentDays} Days</p>`;
+    }
 
-reportResult.innerHTML=html;
+    reportResult.innerHTML=html;
 
+  }catch(err){
+    showPopup("Error generating report");
+  }
 }
 
 function logout(){
-location.reload();
+  location.reload();
 }
 
 </script>
-
-</body>
-</html>
