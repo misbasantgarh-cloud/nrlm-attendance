@@ -10,7 +10,7 @@ button{padding:10px 20px;margin:5px}
 </head>
 <body>
 
-<h2>NRLM Attendance System</h2>
+<h2>NRLM Attendance System dddddddd</h2>
 
 <div id="loginBox">
   <input id="mobile" placeholder="Mobile"><br><br>
@@ -32,13 +32,18 @@ button{padding:10px 20px;margin:5px}
   </div>
 
   <div id="bpmPanel" class="hidden">
+    <br><br>
+<input type="month" id="reportMonth">
+<button onclick="getReport()">Monthly Report</button>
+<div id="reportBox"></div>
+
     <button onclick="loadLeaves()">View Leaves</button>
     <div id="leaveList"></div>
   </div>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxJ_qwVvr3dfbLcJLWELUoBUfONAwZ9rbNB0a_kSbl80hmxfYEBTf7fONuZsE9WmEpd2w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzggasXxWffwh2OI3zDSJwlYgaKpALqyZijjPMQv4z-q3rEsVxZStN94V0hWfCWRL3HtA/exec";
 let currentUser = {};
 
 function login(){
@@ -144,8 +149,30 @@ function approve(row){
   .then(res=>res.json())
   .then(()=>alert("Updated"));
 }
+
+
+
+  function getReport(){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"getMonthlyReport",
+      month:reportMonth.value
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    let html="";
+    for(let id in data.report){
+      html+= `<p>${data.report[id].name} - ${data.report[id].presentDays} Days</p>`;
+    }
+    reportBox.innerHTML=html;
+  });
+}
+
 </script>
 
 </body>
 </html>
+
 
