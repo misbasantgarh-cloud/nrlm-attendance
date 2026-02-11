@@ -293,35 +293,43 @@ showPopup("Invalid Login","error");
 
 function applyRoleInterface(role){
 
+role = role.toUpperCase().trim();
+
 $("#menuAttendance").hide();
 $("#menuLeave").hide();
 $("#menuBPM").hide();
 $("#menuBlock").hide();
 $("#menuReports").hide();
 
+if(role == "CADRE" || role == "CADER" || role == "CC" || role == "CDEO" || role == "MOBILIZER"){
 
-if(role == "CADRE"){
-
-$("#menuAttendance").show();
-$("#menuLeave").show();
+    $("#menuAttendance").show();
+    $("#menuLeave").show();
 
 }
 
 else if(role == "BPM"){
 
-$("#menuBPM").show();
+    $("#menuBPM").show();
 
 }
 
 else if(role == "BLOCK"){
 
-$("#menuBPM").show();
-$("#menuBlock").show();
-$("#menuReports").show();
+    $("#menuBPM").show();
+    $("#menuBlock").show();
+    $("#menuReports").show();
+
+}
+
+else{
+
+    showPopup("Invalid Role Assigned: " + role, "error");
 
 }
 
 }
+
 
 
 
@@ -490,3 +498,4 @@ $("#reportTable").html(html);
 
 </body>
 </html>
+
