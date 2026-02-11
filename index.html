@@ -1,178 +1,369 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>NRLM Attendance</title>
+<meta charset="UTF-8">
+<title>NRLM Geo Attendance System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body{font-family:Arial;text-align:center;background:#f4f6f9}
-button{padding:10px 20px;margin:5px}
-.hidden{display:none}
+body{
+  font-family:Segoe UI;
+  background:#f4f6fa;
+  margin:0;
+}
+header{
+  background:#1e3a8a;
+  color:white;
+  padding:15px;
+  text-align:center;
+  font-size:20px;
+}
+.container{
+  padding:20px;
+}
+.card{
+  background:white;
+  padding:20px;
+  margin-bottom:15px;
+  border-radius:8px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+input,select{
+  width:100%;
+  padding:10px;
+  margin:5px 0;
+}
+button{
+  padding:10px;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+  margin-top:5px;
+}
+.primary{background:#2563eb;color:white;}
+.danger{background:#dc2626;color:white;}
+.success{background:#16a34a;color:white;}
+.logout{float:right;background:#dc2626;color:white;}
+.hidden{display:none;}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  border:1px solid #ccc;
+  padding:8px;
+}
+th{background:#e5e7eb;}
+.popup{
+  position:fixed;
+  top:30%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:white;
+  padding:20px;
+  border-radius:8px;
+  box-shadow:0 0 20px rgba(0,0,0,0.4);
+  display:none;
+}
 </style>
 </head>
+
 <body>
 
-<h2>NRLM Attendance System dddddddd</h2>
+<header>
+NRLM Geo Attendance System
+<button class="logout hidden" onclick="logout()" id="logoutBtn">Logout</button>
+</header>
 
-<div id="loginBox">
-  <input id="mobile" placeholder="Mobile"><br><br>
-  <input id="password" type="password" placeholder="Password"><br><br>
-  <button onclick="login()">Login</button>
+<div class="container">
+
+<!-- LOGIN -->
+<div class="card" id="loginCard">
+<h3>Login</h3>
+<input id="userId" placeholder="User ID">
+<input id="password" type="password" placeholder="Password">
+<button class="primary" onclick="login()">Login</button>
 </div>
 
+<!-- DASHBOARD -->
 <div id="dashboard" class="hidden">
-  <h3 id="welcome"></h3>
 
-  <div id="cadrePanel" class="hidden">
-    <button onclick="markIn()">Mark IN</button>
-    <button onclick="markOut()">Mark OUT</button>
-    <br><br>
-    <input type="date" id="from">
-    <input type="date" id="to">
-    <input placeholder="Reason" id="reason">
-    <button onclick="applyLeave()">Apply Leave</button>
-  </div>
+<div class="card">
+<h3>Welcome <span id="userName"></span></h3>
+</div>
 
-  <div id="bpmPanel" class="hidden">
-    <br><br>
+<!-- CADRE PANEL -->
+<div id="cadrePanel" class="hidden">
+
+<div class="card">
+<h3>Attendance</h3>
+<button class="primary" onclick="markIn()">Mark IN</button>
+<button class="success" onclick="markOut()">Mark OUT</button>
+</div>
+
+<div class="card">
+<h3>Apply Leave</h3>
+<input type="date" id="fromDate">
+<input type="date" id="toDate">
+<input id="reason" placeholder="Reason">
+<button class="primary" onclick="applyLeave()">Submit Leave</button>
+</div>
+
+</div>
+
+<!-- BPM PANEL -->
+<div id="bpmPanel" class="hidden">
+<div class="card">
+<h3>Pending Leave Requests</h3>
+<button onclick="loadLeaves()">Refresh</button>
+<table id="leaveTable"></table>
+</div>
+</div>
+
+<!-- BLOCK PANEL -->
+<div id="blockPanel" class="hidden">
+<div class="card">
+<h3>Final Leave Approval</h3>
+<button onclick="loadLeaves()">Refresh</button>
+<table id="leaveTableBlock"></table>
+</div>
+
+<div class="card">
+<h3>Monthly Attendance Report</h3>
 <input type="month" id="reportMonth">
-<button onclick="getReport()">Monthly Report</button>
-<div id="reportBox"></div>
+<button onclick="loadMonthlyReport()">Generate</button>
+<div id="reportResult"></div>
+</div>
+</div>
 
-    <button onclick="loadLeaves()">View Leaves</button>
-    <div id="leaveList"></div>
-  </div>
+</div>
+</div>
+
+<div class="popup" id="popup">
+<p id="popupMsg"></p>
+<button onclick="closePopup()">OK</button>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzggasXxWffwh2OI3zDSJwlYgaKpALqyZijjPMQv4z-q3rEsVxZStN94V0hWfCWRL3HtA/exec";
-let currentUser = {};
 
-function login(){
-  fetch(API_URL,{
+const API_URL = "https://script.google.com/macros/s/AKfycbzVJ0QbERmm6EAc1wHb9vdjq9npFFoLRKNKC9gF1ZpnR6nD86NRPKNJaf3cASGa91GjtQ/exec";
+
+let currentUser = {};
+let userRole = "";
+
+/* POPUP */
+function showPopup(msg){
+  document.getElementById("popupMsg").innerHTML = msg;
+  document.getElementById("popup").style.display="block";
+}
+function closePopup(){
+  document.getElementById("popup").style.display="none";
+}
+
+/* LOGIN */
+async function login(){
+
+  const res = await fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({
       action:"login",
-      mobile:mobile.value,
-      password:password.value
+      userId:userId.value.trim(),
+      password:password.value.trim()
     })
-  })
-  .then(res=>res.json())
-  .then(data=>{
-    if(data.status==="success"){
-      currentUser = data.user;
-      loginBox.classList.add("hidden");
-      dashboard.classList.remove("hidden");
-      welcome.innerText="Welcome "+currentUser.name;
-
-      if(currentUser.role==="CADRE"){
-        cadrePanel.classList.remove("hidden");
-      }else{
-        bpmPanel.classList.remove("hidden");
-      }
-    }else{
-      alert(data.message);
-    }
   });
+
+  const data = await res.json();
+
+  if(data.status=="success"){
+
+    currentUser = data;
+    userRole = data.role.toUpperCase();
+
+    loginCard.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+    logoutBtn.classList.remove("hidden");
+
+    userName.innerText = data.name + " ("+data.role+")";
+
+    if(userRole=="CADRE"){
+      cadrePanel.classList.remove("hidden");
+    }
+    else if(userRole=="BPM"){
+      bpmPanel.classList.remove("hidden");
+    }
+    else if(userRole=="BLOCK"){
+      blockPanel.classList.remove("hidden");
+    }
+
+    showPopup("Login Successful");
+
+  }else{
+    showPopup(data.message);
+  }
 }
 
+/* MARK IN */
 function markIn(){
-  navigator.geolocation.getCurrentPosition(pos=>{
-    sendAttendance("markIn",pos);
-  });
+navigator.geolocation.getCurrentPosition(async pos=>{
+
+const res = await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({
+action:"markIn",
+userId:currentUser.userId,
+name:currentUser.name,
+role:currentUser.role,
+cadre:currentUser.cadre,
+locationId:currentUser.locationId,
+lat:pos.coords.latitude,
+lng:pos.coords.longitude
+})
+});
+
+const data = await res.json();
+
+if(data.status=="success"){
+showPopup("Marked IN at "+data.location+"<br>"+data.address);
+}else{
+showPopup(data.message);
 }
 
+});
+}
+
+/* MARK OUT */
 function markOut(){
-  navigator.geolocation.getCurrentPosition(pos=>{
-    sendAttendance("markOut",pos);
-  });
+navigator.geolocation.getCurrentPosition(async pos=>{
+
+const res = await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({
+action:"markOut",
+userId:currentUser.userId,
+lat:pos.coords.latitude,
+lng:pos.coords.longitude
+})
+});
+
+const data = await res.json();
+showPopup(data.message);
+
+});
 }
 
-function sendAttendance(type,pos){
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:type,
-      ...currentUser,
-      lat:pos.coords.latitude,
-      lng:pos.coords.longitude
-    })
-  })
-  .then(res=>res.json())
-  .then(data=>alert(data.message));
+/* APPLY LEAVE */
+async function applyLeave(){
+
+if(!fromDate.value || !reason.value){
+showPopup("Fill All Fields");
+return;
 }
 
-function applyLeave(){
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"applyLeave",
-      userId:currentUser.userId,
-      name:currentUser.name,
-      role:currentUser.role,
-      from:from.value,
-      to:to.value,
-      reason:reason.value
-    })
-  })
-  .then(res=>res.json())
-  .then(data=>alert(data.message));
+const res = await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({
+action:"applyLeave",
+userId:currentUser.userId,
+name:currentUser.name,
+fromDate:fromDate.value,
+toDate:toDate.value,
+reason:reason.value
+})
+});
+
+const data = await res.json();
+showPopup(data.message);
+
 }
 
-function loadLeaves(){
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"getLeaves"})
-  })
-  .then(res=>res.json())
-  .then(data=>{
-    let html="";
-    data.leaves.forEach((row,i)=>{
-      if(i===0)return;
-      html+=`
-        <p>${row[1]} | ${row[6]}
-        <button onclick="approve(${i})">Approve</button>
-        </p>`;
-    });
-    leaveList.innerHTML=html;
-  });
+/* LOAD LEAVES */
+async function loadLeaves(){
+
+const res = await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({action:"getLeaves"})
+});
+
+const data = await res.json();
+
+let html="<tr><th>User</th><th>From</th><th>Status</th><th>Action</th></tr>";
+
+data.forEach(l=>{
+
+if(userRole=="BPM" && l[6]=="Pending BPM"){
+html+=`<tr>
+<td>${l[2]}</td>
+<td>${l[3]}</td>
+<td>${l[6]}</td>
+<td>
+<button onclick="updateLeave('${l[0]}','Approved BPM')">Approve</button>
+<button onclick="updateLeave('${l[0]}','Rejected')">Reject</button>
+</td>
+</tr>`;
 }
 
-function approve(row){
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"updateLeave",
-      row:row,
-      status:"APPROVED",
-      updatedBy:currentUser.name
-    })
-  })
-  .then(res=>res.json())
-  .then(()=>alert("Updated"));
+if(userRole=="BLOCK" && l[6]=="Pending Block"){
+html+=`<tr>
+<td>${l[2]}</td>
+<td>${l[3]}</td>
+<td>${l[6]}</td>
+<td>
+<button onclick="updateLeave('${l[0]}','Approved')">Approve</button>
+<button onclick="updateLeave('${l[0]}','Rejected')">Reject</button>
+</td>
+</tr>`;
 }
 
+});
 
+leaveTable.innerHTML=html;
+leaveTableBlock.innerHTML=html;
 
-  function getReport(){
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"getMonthlyReport",
-      month:reportMonth.value
-    })
-  })
-  .then(res=>res.json())
-  .then(data=>{
-    let html="";
-    for(let id in data.report){
-      html+= `<p>${data.report[id].name} - ${data.report[id].presentDays} Days</p>`;
-    }
-    reportBox.innerHTML=html;
-  });
+}
+
+/* UPDATE LEAVE */
+async function updateLeave(id,status){
+
+await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({
+action:"updateLeave",
+leaveId:id,
+status:status
+})
+});
+
+showPopup("Updated");
+loadLeaves();
+}
+
+/* MONTHLY REPORT */
+async function loadMonthlyReport(){
+
+const res = await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({
+action:"getMonthlyReport",
+month:reportMonth.value
+})
+});
+
+const data = await res.json();
+
+let html="";
+for(let u in data.report){
+html+=`<p>${data.report[u].name} - ${data.report[u].presentDays} Days</p>`;
+}
+
+reportResult.innerHTML=html;
+
+}
+
+function logout(){
+location.reload();
 }
 
 </script>
 
 </body>
 </html>
-
-
