@@ -62,16 +62,44 @@ th,td{
   display:none;
 }
 
-.success{
+
+/* ---- POPUP STYLE ---- */
+
+.popup{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.6);
+}
+
+.popupBox{
+  background:white;
+  width:80%;
+  margin:auto;
+  margin-top:30%;
+  padding:20px;
+  text-align:center;
+  border-radius:10px;
+}
+
+.successPopup{
   color:green;
+  font-size:20px;
+  font-weight:bold;
 }
 
-.error{
+.errorPopup{
   color:red;
+  font-size:20px;
+  font-weight:bold;
 }
 
-.menu button{
-  width:48%;
+.popup button{
+  margin-top:15px;
+  width:50%;
 }
 
 </style>
@@ -86,7 +114,8 @@ th,td{
 
 <div class="container">
 
-<!-- LOGIN BOX -->
+
+<!-- LOGIN -->
 <div class="box" id="loginBox">
 <h3>Login</h3>
 
@@ -105,43 +134,22 @@ th,td{
 
 <div class="box">
 <h3>Welcome <span id="uname"></span></h3>
-
-<div class="menu">
-
-<button onclick="show('attendanceBox')" id="menuAttendance">Attendance</button>
-
-<button onclick="show('leaveBox')" id="menuLeave">Apply Leave</button>
-
-<button onclick="show('reportBox')" id="menuReport">Reports</button>
-
-<button onclick="show('bpmBox')" id="menuBPM">BPM Dashboard</button>
-
-<button onclick="show('blockBox')" id="menuBlock">Block Dashboard</button>
-
-<button onclick="show('summaryBox')" id="menuSummary">Monthly Summary</button>
-
 </div>
-
-</div>
-
 
 
 <!-- ATTENDANCE -->
-<div class="box hide" id="attendanceBox">
+<div class="box" id="attendanceBox">
 
 <h3>Attendance</h3>
 
 <button onclick="markIn()">Mark In</button>
 <button onclick="markOut()">Mark Out</button>
 
-<div id="attMsg"></div>
-
 </div>
 
 
-
 <!-- LEAVE -->
-<div class="box hide" id="leaveBox">
+<div class="box" id="leaveBox">
 
 <h3>Apply Leave</h3>
 
@@ -151,85 +159,65 @@ Reason: <input id="reason">
 
 <button onclick="applyLeave()">Apply</button>
 
-<div id="leaveMsg"></div>
+</div>
 
+
+</div>
 </div>
 
 
 
-<!-- REPORT -->
-<div class="box hide" id="reportBox">
+<!-- POPUP MESSAGE BOX -->
 
-<h3>Attendance Report</h3>
+<div class="popup" id="popup">
 
-<button onclick="loadReport()">Load Report</button>
+  <div class="popupBox">
 
-<table id="reportTable"></table>
+    <div id="popupMsg"></div>
 
-</div>
+    <button onclick="closePopup()">OK</button>
 
+  </div>
 
-
-<!-- BPM -->
-<div class="box hide" id="bpmBox">
-
-<h3>BPM Approvals</h3>
-
-<button onclick="loadLeaves()">Load Leaves</button>
-
-<table id="leaveTable"></table>
-
-</div>
-
-
-
-<!-- BLOCK -->
-<div class="box hide" id="blockBox">
-
-<h3>Block Approvals</h3>
-
-<button onclick="loadLeaves()">Load Leaves</button>
-
-<table id="leaveTable2"></table>
-
-</div>
-
-
-
-<!-- MONTHLY SUMMARY -->
-<div class="box hide" id="summaryBox">
-
-<h3>Monthly Summary</h3>
-
-<input id="month" placeholder="MM/yyyy">
-<button onclick="summary()">View</button>
-
-<table id="summaryTable"></table>
-
-</div>
-
-
-
-</div>
 </div>
 
 
 
 <script>
 
-var URL="https://script.google.com/macros/s/AKfycbynQe3ZPuhKXdREyOgFR_lZxPA_-GmzVL3zp2IWvubo3TLH5W9zTEQczl3dhTzro8WRIg/exec";
+var URL="YOUR_APPS_SCRIPT_URL_HERE";
 
 var userid="";
 var userRole="";
 
-function show(id){
-  $(".box").addClass("hide");
-  $("#"+id).removeClass("hide");
+
+
+// SHOW POPUP FUNCTION
+
+function showPopup(msg, type){
+
+$("#popupMsg").removeClass();
+
+if(type=="success")
+  $("#popupMsg").addClass("successPopup");
+else
+  $("#popupMsg").addClass("errorPopup");
+
+$("#popupMsg").html(msg);
+
+$("#popup").fadeIn();
+
+}
+
+
+function closePopup(){
+$("#popup").fadeOut();
 }
 
 
 
-// LOGIN WITH ROLE CONTROL
+// LOGIN
+
 function login(){
 
 $.post(URL,{
@@ -245,18 +233,15 @@ var r=JSON.parse(res);
 if(r.status=="ok"){
 
 userid=$("#userid").val();
-userRole=r.cadre;
 
-$("#uname").html(r.name+" ("+r.cadre+")");
+$("#uname").html(r.name);
 
 $("#loginBox").hide();
 $("#mainPanel").show();
 
-applyRoleAccess(userRole);
-
 }else{
 
-$("#msg").html("<span class='error'>Login Failed</span>");
+showPopup("Login Failed", "error");
 
 }
 
@@ -266,53 +251,8 @@ $("#msg").html("<span class='error'>Login Failed</span>");
 
 
 
-// ROLE BASED INTERFACE
-function applyRoleAccess(role){
+// GET LOCATION
 
-$("#menuReport").hide();
-$("#menuBPM").hide();
-$("#menuBlock").hide();
-$("#menuSummary").hide();
-
-if(role=="CC" || role=="MOBILIZER" || role=="CADRE"){
-
-$("#menuAttendance").show();
-$("#menuLeave").show();
-
-}
-
-else if(role=="BPM"){
-
-$("#menuAttendance").show();
-$("#menuLeave").show();
-$("#menuReport").show();
-$("#menuBPM").show();
-
-}
-
-else if(role=="BLOCK"){
-
-$("#menuAttendance").show();
-$("#menuLeave").show();
-$("#menuReport").show();
-$("#menuBPM").show();
-$("#menuBlock").show();
-$("#menuSummary").show();
-
-}
-
-else{
-
-$("#menuAttendance").show();
-$("#menuLeave").show();
-
-}
-
-}
-
-
-
-// GEO LOCATION
 function getLocation(cb){
 
 navigator.geolocation.getCurrentPosition(function(p){
@@ -324,19 +264,25 @@ cb(p.coords.latitude,p.coords.longitude);
 
 
 
-// MARK IN
+// MARK IN WITH POPUP
+
 function markIn(){
 
 getLocation(function(lat,lon){
 
 $.post(URL,{
+
 action:"markIn",
 userid:userid,
 lat:lat,
 lon:lon
+
 },function(res){
 
-$("#attMsg").html(res);
+if(res.includes("IN at"))
+  showPopup(res, "success");
+else
+  showPopup(res, "error");
 
 });
 
@@ -346,19 +292,25 @@ $("#attMsg").html(res);
 
 
 
-// MARK OUT
+// MARK OUT WITH POPUP
+
 function markOut(){
 
 getLocation(function(lat,lon){
 
 $.post(URL,{
+
 action:"markOut",
 userid:userid,
 lat:lat,
 lon:lon
+
 },function(res){
 
-$("#attMsg").html(res);
+if(res.includes("OUT Marked"))
+  showPopup(res, "success");
+else
+  showPopup(res, "error");
 
 });
 
@@ -368,146 +320,33 @@ $("#attMsg").html(res);
 
 
 
-// APPLY LEAVE
+// APPLY LEAVE WITH POPUP
+
 function applyLeave(){
 
 if($("#reason").val()==""){
-alert("Reason Required");
+
+showPopup("Reason Required", "error");
 return;
+
 }
 
 $.post(URL,{
+
 action:"applyLeave",
 userid:userid,
 from:$("#from").val(),
 to:$("#to").val(),
 reason:$("#reason").val()
+
 },function(res){
 
-$("#leaveMsg").html(res);
+showPopup(res, "success");
 
 });
 
 }
 
-
-
-// LOAD REPORT
-function loadReport(){
-
-$.post(URL,{action:"getReport"},function(res){
-
-var d=JSON.parse(res);
-
-var html="<tr><th>Date</th><th>User</th><th>Cadre</th><th>In</th><th>Out</th><th>Status</th></tr>";
-
-for(i=1;i<d.length;i++){
-
-html+="<tr>"+
-"<td>"+d[i][0]+"</td>"+
-"<td>"+d[i][1]+"</td>"+
-"<td>"+d[i][2]+"</td>"+
-"<td>"+d[i][3]+"</td>"+
-"<td>"+d[i][7]+"</td>"+
-"<td>"+d[i][10]+"</td>"+
-"</tr>";
-}
-
-$("#reportTable").html(html);
-
-});
-}
-
-
-
-// LOAD LEAVES
-function loadLeaves(){
-
-$.post(URL,{action:"getLeaves"},function(res){
-
-var d=JSON.parse(res);
-
-var html="<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>BPM</th><th>Block</th></tr>";
-
-for(i=1;i<d.length;i++){
-
-html+="<tr>"+
-"<td>"+d[i][0]+"</td>"+
-"<td>"+d[i][1]+"</td>"+
-"<td>"+d[i][2]+"</td>"+
-"<td>"+d[i][3]+"</td>"+
-"<td>"+d[i][4]+"</td>"+
-"<td><button onclick=approveBPM('"+d[i][0]+"','Approved')>Approve</button></td>"+
-"<td><button onclick=approveBlock('"+d[i][0]+"','Approved')>Final Approve</button></td>"+
-"</tr>";
-}
-
-$("#leaveTable").html(html);
-$("#leaveTable2").html(html);
-
-});
-}
-
-
-
-// BPM APPROVE
-function approveBPM(id,s){
-
-$.post(URL,{
-action:"approveBPM",
-leaveid:id,
-status:s
-},function(res){
-
-alert(res);
-loadLeaves();
-
-});
-
-}
-
-
-
-// BLOCK APPROVE
-function approveBlock(id,s){
-
-$.post(URL,{
-action:"approveBlock",
-leaveid:id,
-status:s
-},function(res){
-
-alert(res);
-loadLeaves();
-
-});
-
-}
-
-
-
-// MONTHLY SUMMARY
-function summary(){
-
-$.post(URL,{
-action:"monthlySummary",
-month:$("#month").val()
-},function(res){
-
-var d=JSON.parse(res);
-
-var html="<tr><th>User</th><th>Days Present</th></tr>";
-
-for(var u in d){
-
-html+="<tr><td>"+u+"</td><td>"+d[u].present+"</td></tr>";
-}
-
-$("#summaryTable").html(html);
-
-});
-
-}
 
 
 $(document).ready(function(){
@@ -523,7 +362,6 @@ $(this).css("background","#2b7cff");
 });
 
 });
-
 
 </script>
 
