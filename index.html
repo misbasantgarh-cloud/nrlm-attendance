@@ -20,7 +20,7 @@ body{
   border-radius:10px;
   box-shadow:0px 0px 10px #aaa;
   width:90%;
-  max-width:600px;
+  max-width:700px;
 }
 
 input,select{
@@ -89,6 +89,12 @@ th,td{
 .error{
   color:red;
   font-size:18px;
+}
+
+.pagination button{
+  width:auto;
+  margin:3px;
+  background:#444;
 }
 
 </style>
@@ -181,6 +187,8 @@ Reason:
 
 <table id="bpmLeaveTable"></table>
 
+<div id="leavePagination" class="pagination"></div>
+
 <button class="backBtn" onclick="backHome()">Back</button>
 
 </div>
@@ -195,6 +203,8 @@ Reason:
 
 <table id="blockLeaveTable"></table>
 
+<div id="leavePagination2" class="pagination"></div>
+
 <button class="backBtn" onclick="backHome()">Back</button>
 
 </div>
@@ -203,11 +213,13 @@ Reason:
 
 <div class="box hide" id="reportPanel">
 
-<h3>Block Reports</h3>
+<h3>Attendance Reports</h3>
 
 <button onclick="loadReport()">Load Attendance Report</button>
 
 <table id="reportTable"></table>
+
+<div id="reportPagination" class="pagination"></div>
 
 <button class="backBtn" onclick="backHome()">Back</button>
 
@@ -224,6 +236,10 @@ var URL = "https://script.google.com/macros/s/AKfycbwqfshSwYpInJf-2r6J18gx6eU6wp
 
 var userid = "";
 var userRole = "";
+
+var pageSize = 10;
+var currentPage = 1;
+var reportData = [];
 
 
 function showPopup(msg,type){
@@ -281,17 +297,13 @@ applyRoleInterface(userRole);
 showPopup("Login Successful","success");
 
 }
-else if(r.status=="wrong_pass"){
-showPopup("Wrong Password","error");
-}
 else{
-showPopup("User Not Found","error");
+showPopup("Invalid Login","error");
 }
 
 });
 
 }
-
 
 
 
@@ -330,7 +342,6 @@ else if(role == "BLOCK"){
 
 
 
-
 function markIn(){
 
 navigator.geolocation.getCurrentPosition(function(p){
@@ -351,7 +362,6 @@ showPopup(res,"success");
 });
 
 }
-
 
 
 
@@ -407,6 +417,156 @@ showPopup(res,"success");
 
 
 
+// ----------- LEAVE REQUESTS WITH PAGINATION -----------
+
+function loadLeaves(){
+
+$.post(URL,{action:"getLeaves"},function(res){
+
+reportData = JSON.parse(res);
+
+currentPage = 1;
+
+renderLeaveTable();
+
+});
+
+}
+
+
+
+function renderLeaveTable(){
+
+var start = (currentPage-1) * pageSize;
+var end = start + pageSize;
+
+var d = reportData;
+
+var html = "<tr><th>ID</th><th>User</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr>";
+
+for(var i=start+1; i<d.length && i<end+1; i++){
+
+html += "<tr>";
+html += "<td>"+d[i][0]+"</td>";
+html += "<td>"+d[i][1]+"</td>";
+html += "<td>"+d[i][2]+"</td>";
+html += "<td>"+d[i][3]+"</td>";
+html += "<td>"+d[i][4]+"</td>";
+html += "<td>"+d[i][5]+"</td>";
+html += "</tr>";
+
+}
+
+$("#bpmLeaveTable").html(html);
+$("#blockLeaveTable").html(html);
+
+renderLeavePagination();
+
+}
+
+
+
+function renderLeavePagination(){
+
+var total = reportData.length - 1;
+var pages = Math.ceil(total / pageSize);
+
+var p = "";
+
+for(var i=1;i<=pages;i++){
+p += "<button onclick='gotoLeavePage("+i+")'>"+i+"</button>";
+}
+
+$("#leavePagination").html(p);
+$("#leavePagination2").html(p);
+
+}
+
+
+
+function gotoLeavePage(p){
+currentPage = p;
+renderLeaveTable();
+}
+
+
+
+// ----------- ATTENDANCE REPORT PAGINATION -----------
+
+function loadReport(){
+
+$.post(URL,{action:"getReport"},function(res){
+
+reportData = JSON.parse(res);
+
+currentPage = 1;
+
+renderReportTable();
+
+});
+
+}
+
+
+
+function renderReportTable(){
+
+var start = (currentPage-1) * pageSize;
+var end = start + pageSize;
+
+var d = reportData;
+
+var html="<tr>";
+
+for(var i=0;i<d[0].length;i++)
+html+="<th>"+d[0][i]+"</th>";
+
+html+="</tr>";
+
+
+for(var i=start+1; i<d.length && i<end+1; i++){
+
+html+="<tr>";
+
+for(var j=0;j<d[i].length;j++)
+html+="<td>"+d[i][j]+"</td>";
+
+html+="</tr>";
+
+}
+
+$("#reportTable").html(html);
+
+renderReportPagination();
+
+}
+
+
+
+function renderReportPagination(){
+
+var total = reportData.length - 1;
+var pages = Math.ceil(total / pageSize);
+
+var p = "";
+
+for(var i=1;i<=pages;i++){
+p += "<button onclick='gotoReportPage("+i+")'>"+i+"</button>";
+}
+
+$("#reportPagination").html(p);
+
+}
+
+
+
+function gotoReportPage(p){
+currentPage = p;
+renderReportTable();
+}
+
+
+
 function logout(){
 location.reload();
 }
@@ -425,5 +585,3 @@ $(".box").hide();
 
 </body>
 </html>
-
-
