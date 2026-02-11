@@ -1,191 +1,392 @@
-<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>NRLM Geo Attendance</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body{
-      font-family: Arial;
-      margin:0;
-      background:#f4f6f9;
-    }
-    .container{
-      max-width:420px;
-      margin:40px auto;
-      background:white;
-      padding:20px;
-      border-radius:10px;
-      box-shadow:0 4px 10px rgba(0,0,0,0.1);
-    }
-    h2{
-      text-align:center;
-      margin-bottom:20px;
-    }
-    input, select, button{
-      width:100%;
-      padding:10px;
-      margin:6px 0;
-      border-radius:6px;
-      border:1px solid #ccc;
-      font-size:14px;
-    }
-    button{
-      background:#0066cc;
-      color:white;
-      border:none;
-      cursor:pointer;
-      font-weight:bold;
-    }
-    button:hover{
-      background:#004c99;
-    }
-    .hidden{
-      display:none;
-    }
-    .logout{
-      background:#d9534f;
-    }
-    .popup{
-      position:fixed;
-      top:50%;
-      left:50%;
-      transform:translate(-50%,-50%);
-      background:white;
-      padding:20px;
-      border-radius:10px;
-      box-shadow:0 5px 15px rgba(0,0,0,0.3);
-      display:none;
-      text-align:center;
-      z-index:1000;
-    }
-    .overlay{
-      position:fixed;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      background:rgba(0,0,0,0.4);
-      display:none;
-      z-index:999;
-    }
-  </style>
+<title>NRLM Geo Attendance System</title>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+
+body{
+  font-family: Arial;
+  background:#eef2f7;
+  text-align:center;
+}
+
+.box{
+  background:white;
+  padding:20px;
+  margin:20px auto;
+  border-radius:10px;
+  box-shadow:0px 0px 10px #aaa;
+  width:90%;
+  max-width:700px;
+}
+
+input{
+  padding:10px;
+  margin:5px;
+  width:90%;
+}
+
+button{
+  padding:10px;
+  margin:5px;
+  width:95%;
+  background:#2b7cff;
+  color:white;
+  border:none;
+  border-radius:5px;
+}
+
+.menu button{
+  width:auto;
+  margin:5px;
+}
+
+table{
+  width:100%;
+  margin-top:10px;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:8px;
+  border:1px solid #ccc;
+}
+
+.hide{
+  display:none;
+}
+
+.logout{
+  background:red;
+}
+
+.backBtn{
+  background:green;
+}
+
+#popup{
+  position:fixed;
+  top:30%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0px 0px 15px #000;
+  display:none;
+}
+
+.success{
+  color:green;
+}
+
+.error{
+  color:red;
+}
+
+</style>
+
 </head>
+
 <body>
 
-<div class="container" id="loginDiv">
-  <h2>NRLM Attendance Login</h2>
-  <input type="text" id="username" placeholder="Enter Username">
-  <input type="password" id="password" placeholder="Enter Password">
-  <button onclick="login()">Login</button>
+<h2>NRLM Attendance Portal</h2>
+
+<div id="popup">
+  <p id="popMsg"></p>
+  <button onclick="$('#popup').hide()">OK</button>
 </div>
 
-<div class="container hidden" id="cadrePanel">
-  <h2>Cadre Panel</h2>
-  <p><b>Assigned Location:</b> <span id="locationName"></span></p>
 
-  <button onclick="markAttendance('IN')">Mark IN</button>
-  <button onclick="markAttendance('OUT')">Mark OUT</button>
+<div class="box" id="loginBox">
 
-  <select id="leaveType">
-    <option value="">Select Leave Type</option>
-    <option value="CL">Casual Leave</option>
-    <option value="ML">Medical Leave</option>
-  </select>
-  <button onclick="applyLeave()">Apply Leave</button>
+<h3>Login</h3>
 
-  <button class="logout" onclick="logout()">Logout</button>
+<input id="userid" placeholder="User ID">
+<input id="password" type="password" placeholder="Password">
+
+<button onclick="login()">Login</button>
+
 </div>
 
-<div class="overlay" id="overlay"></div>
-<div class="popup" id="popup"></div>
+
+<div id="mainPanel" class="hide">
+
+<h3>Welcome <span id="uname"></span></h3>
+
+<div class="menu">
+
+<button id="menuLeave" onclick="show('leaveBox')">Apply Leave</button>
+
+<button id="menuBPM" onclick="show('bpmPanel')" style="display:none;">BPM Approvals</button>
+
+<button id="menuBlock" onclick="show('blockPanel')" style="display:none;">Block Approvals</button>
+
+<button id="menuReports" onclick="show('reportPanel')" style="display:none;">Reports</button>
+
+<button class="logout" onclick="logout()">Logout</button>
+
+</div>
+
+
+
+<div class="box hide" id="leaveBox">
+
+<h3>Apply Leave</h3>
+
+From:
+<input id="from">
+
+To:
+<input id="to">
+
+Reason:
+<input id="reason">
+
+<button onclick="applyLeave()">Apply</button>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
+</div>
+
+
+
+<div class="box hide" id="bpmPanel">
+
+<h3>BPM – Approvals</h3>
+
+<button onclick="loadLeaves()">Load Leaves</button>
+
+<table id="bpmTable"></table>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
+</div>
+
+
+
+<div class="box hide" id="blockPanel">
+
+<h3>Block – Final Approvals</h3>
+
+<button onclick="loadLeaves()">Load Leaves</button>
+
+<table id="blockTable"></table>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
+</div>
+
+
+
+<div class="box hide" id="reportPanel">
+
+<h3>Reports</h3>
+
+<button onclick="loadReport()">Load Report</button>
+
+<table id="reportTable"></table>
+
+<button class="backBtn" onclick="backHome()">Back</button>
+
+</div>
+
+
+</div>
+
+
 
 <script>
 
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxIg7qDH5g9blBzZtYR1lw0igl2CgvAK009rR9FBqot0iGc0nZIKhxPYiojm70kLVs/exec";
+var URL = "https://script.google.com/macros/s/AKfycbyYAySG0RNa02DPZA2fHWKtWkBht5uZDJEn1eu24gUQk1-fKYRnhA88OnPxF9VlmP3OXA/exec";
 
-let currentUser = "";
+var userid="";
+var role="";
 
-function showPopup(message){
-  document.getElementById("popup").innerHTML = message + "<br><br><button onclick='closePopup()'>OK</button>";
-  document.getElementById("overlay").style.display="block";
-  document.getElementById("popup").style.display="block";
+
+function showPopup(msg,type){
+$("#popMsg").html(msg);
+$("#popMsg").attr("class",type);
+$("#popup").show();
 }
 
-function closePopup(){
-  document.getElementById("overlay").style.display="none";
-  document.getElementById("popup").style.display="none";
-}
+
 
 function login(){
-  let user = document.getElementById("username").value;
-  let pass = document.getElementById("password").value;
 
-  if(!user || !pass){
-    showPopup("Please enter Username & Password");
-    return;
-  }
+$.post(URL,{
 
-  fetch(`${WEBAPP_URL}?action=login&username=${user}&password=${pass}`)
-  .then(res=>res.json())
-  .then(data=>{
-    if(data.status=="success"){
-      currentUser = user;
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("cadrePanel").classList.remove("hidden");
-      document.getElementById("locationName").innerText = data.location;
-    }else{
-      showPopup(data.message);
-    }
-  });
+action:"login",
+userid:$("#userid").val(),
+password:$("#password").val()
+
+},function(res){
+
+var r = JSON.parse(res);
+
+if(r.status=="ok"){
+
+userid=$("#userid").val();
+role=r.role;
+
+$("#uname").html(r.name + " ("+r.role+")");
+
+$("#loginBox").hide();
+$("#mainPanel").show();
+
+if(role=="CADRE"){
+$("#menuLeave").show();
+}
+else if(role=="BPM"){
+$("#menuBPM").show();
+}
+else if(role=="BLOCK"){
+$("#menuBlock").show();
+$("#menuReports").show();
 }
 
-function markAttendance(type){
+showPopup("Login Successful","success");
 
-  if(!navigator.geolocation){
-    showPopup("Geolocation not supported");
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(function(pos){
-
-    let lat = pos.coords.latitude;
-    let lng = pos.coords.longitude;
-
-    fetch(`${WEBAPP_URL}?action=attendance&username=${currentUser}&type=${type}&lat=${lat}&lng=${lng}`)
-    .then(res=>res.json())
-    .then(data=>{
-      showPopup(data.message);
-    });
-
-  }, function(){
-    showPopup("Please allow location access");
-  });
 }
+else{
+showPopup("Login Failed","error");
+}
+
+});
+
+}
+
+
 
 function applyLeave(){
 
-  let leaveType = document.getElementById("leaveType").value;
+$.post(URL,{
 
-  if(!leaveType){
-    showPopup("Select Leave Type");
-    return;
-  }
+action:"applyLeave",
+userid:userid,
+from:$("#from").val(),
+to:$("#to").val(),
+reason:$("#reason").val()
 
-  fetch(`${WEBAPP_URL}?action=leave&username=${currentUser}&leaveType=${leaveType}`)
-  .then(res=>res.json())
-  .then(data=>{
-    showPopup(data.message);
-  });
+},function(res){
+
+showPopup(res,"success");
+
+});
+
+}
+
+
+
+function loadLeaves(){
+
+$.post(URL,{action:"getLeaves"},function(res){
+
+var d = JSON.parse(res);
+
+var html="<tr><th>ID</th><th>User</th><th>Reason</th><th>BPM</th><th>Block</th><th>Action</th></tr>";
+
+for(var i=1;i<d.length;i++){
+
+html+="<tr>";
+
+html+="<td>"+d[i][0]+"</td>";
+html+="<td>"+d[i][1]+"</td>";
+html+="<td>"+d[i][4]+"</td>";
+html+="<td>"+d[i][5]+"</td>";
+html+="<td>"+d[i][6]+"</td>";
+
+if(role=="BPM"){
+
+html+="<td><button onclick='bpm(\""+d[i][0]+"\",\"approve\")'>Approve</button> "+
+      "<button onclick='bpm(\""+d[i][0]+"\",\"reject\")'>Reject</button></td>";
+
+}
+
+if(role=="BLOCK"){
+
+html+="<td><button onclick='block(\""+d[i][0]+"\",\"approve\")'>Approve</button> "+
+      "<button onclick='block(\""+d[i][0]+"\",\"reject\")'>Reject</button></td>";
+
+}
+
+html+="</tr>";
+
+}
+
+$("#bpmTable").html(html);
+$("#blockTable").html(html);
+
+});
+
+}
+
+
+
+function bpm(id,type){
+
+$.post(URL,{action:"bpmDecision",id:id,type:type},function(res){
+showPopup(res,"success");
+loadLeaves();
+});
+
+}
+
+
+
+function block(id,type){
+
+$.post(URL,{action:"blockDecision",id:id,type:type},function(res){
+showPopup(res,"success");
+loadLeaves();
+});
+
+}
+
+
+
+function loadReport(){
+
+$.post(URL,{action:"getReport"},function(res){
+
+var d = JSON.parse(res);
+
+var html="";
+
+for(var i=0;i<d.length;i++){
+html+="<tr>";
+
+for(var j=0;j<d[i].length;j++)
+html+="<td>"+d[i][j]+"</td>";
+
+html+="</tr>";
+}
+
+$("#reportTable").html(html);
+
+});
+
+}
+
+
+
+function show(id){
+$(".box").hide();
+$("#"+id).show();
+}
+
+function backHome(){
+$(".box").hide();
 }
 
 function logout(){
-  currentUser="";
-  document.getElementById("loginDiv").classList.remove("hidden");
-  document.getElementById("cadrePanel").classList.add("hidden");
+location.reload();
 }
 
 </script>
+
 </body>
 </html>
