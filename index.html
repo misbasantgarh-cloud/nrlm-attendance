@@ -262,8 +262,29 @@ function changeReportPage(delta){reportPage=Math.max(1,Math.min(Math.ceil(report
 
 /* ---------- COUNTS ---------- */
 function loadCounts(){
-fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})}).then(r=>r.json()).then(data=>attCount.innerText=data.length-1);
-fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.json()).then(data=>leaveCount.innerText=data.length-1);
+  // Attendance Count
+  fetch(API, { method: "POST", body: JSON.stringify({ action: "getAttendance" }) })
+  .then(r => r.json())
+  .then(data => {
+    let count = 0;
+    data.slice(1).forEach(r => {
+      if(userRole === "Cadre" && r[1] === userName) count++;       // Cadre sees own
+      else if(userRole !== "Cadre" && r[3] === userBlock) count++; // BPM/Block sees block
+    });
+    attCount.innerText = count;
+  });
+
+  // Leave Count
+  fetch(API, { method: "POST", body: JSON.stringify({ action: "getLeave" }) })
+  .then(r => r.json())
+  .then(data => {
+    let count = 0;
+    data.slice(1).forEach(r => {
+      if(userRole === "Cadre" && r[1] === userName) count++;       // Cadre sees own
+      else if(userRole !== "Cadre" && r[2] === userBlock) count++; // BPM/Block sees block
+    });
+    leaveCount.innerText = count;
+  });
 }
 </script>
 </body>
