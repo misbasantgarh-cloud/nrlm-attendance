@@ -88,7 +88,7 @@ body:JSON.stringify({action:"login",username:username.value,password:password.va
 if(res.status==="success"){
 userRole=res.role;
 userBlock=res.block;
-userName=res.name;
+userName=username.value;
 showDashboard();
 }else{
 loginMsg.innerText=res.message;
@@ -175,23 +175,52 @@ loadReports();
 });
 }
 
-/* ---------- APPROVALS ---------- */
+/* ---------- APPROVALS WITH PAGINATION ---------- */
+let approvalDataFull = [];
+let approvalPage = 1;
+const approvalPageSize = 10;
+
 function loadApprovals(){
-fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
-.then(r=>r.json()).then(data=>{
-let html="<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
-data.slice(1).forEach((row,i)=>{
-if(userRole==="BPM" && row[7]==="Pending_BPM" && row[2]===userBlock)
-html+=`<tr><td>${row[1]}</td><td>${formatDate(row[3])}</td><td>${formatDate(row[4])}</td>
-<td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td>
-<td><button onclick="approveLeave(${i+2},'approveLeaveBPM')">Approve</button></td></tr>`;
-if(userRole==="Block" && row[7]==="Pending_Block")
-html+=`<tr><td>${row[1]}</td><td>${formatDate(row[3])}</td><td>${formatDate(row[4])}</td>
-<td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td>
-<td><button onclick="approveLeave(${i+2},'approveLeaveBlock')">Final Approve</button></td></tr>`;
-});
-approvalTable.innerHTML=html;
-});
+  fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
+  .then(r=>r.json()).then(data=>{
+    approvalDataFull = data.slice(1);
+    approvalPage = 1;
+    renderApprovalTable();
+  });
+}
+
+function renderApprovalTable(){
+  let start = (approvalPage-1)*approvalPageSize;
+  let end = start + approvalPageSize;
+  let pageData = approvalDataFull.slice(start,end);
+
+  let html="<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
+  pageData.forEach((row,i)=>{
+    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[2]===userBlock)
+      html+=`<tr><td>${row[1]}</td><td>${formatDate(row[3])}</td><td>${formatDate(row[4])}</td>
+      <td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td>
+      <td><button onclick="approveLeave(${i+1+(approvalPage-1)*approvalPageSize},'approveLeaveBPM')">Approve</button></td></tr>`;
+    if(userRole==="Block" && row[7]==="Pending_Block")
+      html+=`<tr><td>${row[1]}</td><td>${formatDate(row[3])}</td><td>${formatDate(row[4])}</td>
+      <td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td>
+      <td><button onclick="approveLeave(${i+1+(approvalPage-1)*approvalPageSize},'approveLeaveBlock')">Final Approve</button></td></tr>`;
+  });
+
+  html += `<tr><td colspan="7">
+    <button onclick="changeApprovalPage(-1)">Prev</button>
+    Page ${approvalPage} of ${Math.ceil(approvalDataFull.length/approvalPageSize)}
+    <button onclick="changeApprovalPage(1)">Next</button>
+  </td></tr>`;
+
+  approvalTable.innerHTML = html;
+}
+
+function changeApprovalPage(delta){
+  const totalPages = Math.ceil(approvalDataFull.length/approvalPageSize);
+  approvalPage += delta;
+  if(approvalPage<1) approvalPage=1;
+  if(approvalPage>totalPages) approvalPage=totalPages;
+  renderApprovalTable();
 }
 
 function approveLeave(row,action){
@@ -199,32 +228,61 @@ fetch(API,{method:"POST",body:JSON.stringify({action:action,row:row})})
 .then(()=>{loadApprovals(); loadReports();});
 }
 
-/* ---------- REPORTS ---------- */
-function loadReports(){
-fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
-.then(r=>r.json()).then(attData=>{
-fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
-.then(r=>r.json()).then(leaveData=>{
-let html="<h5>Attendance Summary</h5><table><tr><th>Name</th><th>Attendance Count</th></tr>";
-let map={};
-attData.slice(1).forEach(r=>{
-if(userRole==="Cadre" && r[1]!==userName) return;
-if(userRole==="BPM" && r[3]!==userBlock) return;
-if(!map[r[1]]) map[r[1]]=0;
-map[r[1]]++;
-});
-for(let n in map) html+=`<tr><td>${n}</td><td>${map[n]}</td></tr>`; html+="</table>";
+/* ---------- REPORTS WITH PAGINATION ---------- */
+let reportDataFull = [];
+let reportPage = 1;
+const reportPageSize = 10;
 
-html+="<h5>Leave Summary</h5><table><tr><th>Name</th><th>Days</th><th>Status</th></tr>";
-leaveData.slice(1).forEach(r=>{
-if(userRole==="Cadre" && r[1]!==userName) return;
-if(userRole==="BPM" && r[2]!==userBlock) return;
-html+=`<tr><td>${r[1]}</td><td>${r[5]}</td><td>${r[7]}</td></tr>`;
-});
-html+="</table>";
-reportContent.innerHTML=html;
-});
-});
+function loadReports(){
+  fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
+  .then(r=>r.json()).then(attData=>{
+    fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
+    .then(r=>r.json()).then(leaveData=>{
+      let attMap = {};
+      attData.slice(1).forEach(r=>{
+        if(userRole==="Cadre" && r[1]!==userName) return;
+        if(userRole==="BPM" && r[3]!==userBlock) return;
+        if(!attMap[r[1]]) attMap[r[1]]=0;
+        attMap[r[1]]++;
+      });
+      reportDataFull = Object.entries(attMap).map(([name,count])=>({name,count}));
+      reportPage = 1;
+      renderReportTable(leaveData);
+    });
+  });
+}
+
+function renderReportTable(leaveData){
+  let start = (reportPage-1)*reportPageSize;
+  let end = start + reportPageSize;
+  let pageData = reportDataFull.slice(start,end);
+
+  let html="<h5>Attendance Summary</h5><table><tr><th>Name</th><th>Attendance Count</th></tr>";
+  pageData.forEach(r=> html+=`<tr><td>${r.name}</td><td>${r.count}</td></tr>`);
+  html += `<tr><td colspan="2">
+    <button onclick="changeReportPage(-1)">Prev</button>
+    Page ${reportPage} of ${Math.ceil(reportDataFull.length/reportPageSize)}
+    <button onclick="changeReportPage(1)">Next</button>
+  </td></tr>`;
+  html+="</table>";
+
+  html+="<h5>Leave Summary</h5><table><tr><th>Name</th><th>Days</th><th>Status</th></tr>";
+  leaveData.slice(1).forEach(r=>{
+    if(userRole==="Cadre" && r[1]!==userName) return;
+    if(userRole==="BPM" && r[2]!==userBlock) return;
+    html+=`<tr><td>${r[1]}</td><td>${r[5]}</td><td>${r[7]}</td></tr>`;
+  });
+  html+="</table>";
+
+  reportContent.innerHTML=html;
+}
+
+function changeReportPage(delta){
+  const totalPages = Math.ceil(reportDataFull.length/reportPageSize);
+  reportPage += delta;
+  if(reportPage<1) reportPage=1;
+  if(reportPage>totalPages) reportPage=totalPages;
+  renderReportTable([]);
 }
 
 /* ---------- COUNTS ---------- */
