@@ -18,13 +18,14 @@ table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{border:1px solid #ddd;padding:8px;text-align:center}
 th{background:#1e3a8a;color:white}
 .summary{display:flex;justify-content:space-around;margin-bottom:15px}
-.summary div{background:#f1f5f9;padding:10px;border-radius:8px}
+.summary div{background:#f1f5f9;padding:10px;border-radius:8px;text-align:center}
 </style>
 </head>
 <body>
 
 <header>NRLM Geo Attendance & MIS Portal</header>
 
+<!-- LOGIN CARD -->
 <div class="card" id="loginCard">
 <h3>Login</h3>
 <input type="text" id="username" placeholder="Username"><br>
@@ -33,30 +34,27 @@ th{background:#1e3a8a;color:white}
 <p id="loginMsg" style="color:red;"></p>
 </div>
 
+<!-- DASHBOARD -->
 <div class="card hidden" id="dashboard">
-
 <h3 id="welcome"></h3>
 <button class="logout" onclick="logout()">Logout</button>
 
+<!-- Summary -->
 <div class="summary">
 <div>Total Attendance: <span id="attCount">0</span></div>
 <div>Total Leave: <span id="leaveCount">0</span></div>
 </div>
 
-<div class="tabs">
-<button onclick="showTab('attendance')" id="tab1">Attendance</button>
-<button onclick="showTab('leave')" id="tab2">Leave</button>
-<button onclick="showTab('approval')" id="tab3">Approvals</button>
-</div>
+<!-- Tabs -->
+<div class="tabs" id="tabs"></div>
 
-<!-- Attendance -->
+<!-- TAB CONTENT -->
 <div id="attendanceTab" class="hidden">
 <h4>Mark Attendance</h4>
 <button onclick="markAttendance()">Mark Attendance</button>
 <p id="attMsg"></p>
 </div>
 
-<!-- Leave -->
 <div id="leaveTab" class="hidden">
 <h4>Apply Leave</h4>
 <input type="date" id="fromDate">
@@ -66,16 +64,18 @@ th{background:#1e3a8a;color:white}
 <p id="leaveMsg"></p>
 </div>
 
-<!-- Approvals -->
 <div id="approvalTab" class="hidden">
-<h4>Pending Approvals</h4>
+<h4>Pending Leave Approvals</h4>
 <table id="approvalTable"></table>
 </div>
 
+<div id="reportTab" class="hidden">
+<h4>Attendance & Leave Reports</h4>
+<div id="reportContent"></div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycby9qSp03nRx4lrwNTqEYhwgP0sCY5O55SZKy0VYM_2OpwC6UNVQ67XaE-fkhY6BSDfXxA/exec";
+const API="https://script.google.com/macros/s/AKfycbw0Deh2mWhCq7_wVT50dekV6NppLXaoEkXVxhhS9uo-08melCjfXWLr4K5AL6Jde-TZCw/exec";
 
 let userRole="",userBlock="",userName="";
 
@@ -83,16 +83,12 @@ let userRole="",userBlock="",userName="";
 function login(){
 fetch(API,{
 method:"POST",
-body:JSON.stringify({
-action:"login",
-username:username.value,
-password:password.value
-})
+body:JSON.stringify({action:"login",username:username.value,password:password.value})
 }).then(r=>r.json()).then(res=>{
 if(res.status==="success"){
 userRole=res.role;
 userBlock=res.block;
-userName=username.value;
+userName=res.name;
 showDashboard();
 }else{
 loginMsg.innerText=res.message;
@@ -100,28 +96,55 @@ loginMsg.innerText=res.message;
 });
 }
 
-function logout(){
-location.reload();
-}
+function logout(){ location.reload(); }
 
+/* ---------- DASHBOARD ---------- */
 function showDashboard(){
 loginCard.classList.add("hidden");
 dashboard.classList.remove("hidden");
-welcome.innerText="Welcome "+userRole+" ("+userBlock+")";
-showTab('attendance');
+welcome.innerText=`Welcome ${userRole} (${userBlock})`;
+
+setupTabs();
 loadCounts();
 if(userRole!=="Cadre") loadApprovals();
+loadReports();
 }
 
 /* ---------- TABS ---------- */
+function setupTabs(){
+const tabDiv=document.getElementById("tabs");
+tabDiv.innerHTML="";
+
+if(userRole==="Cadre"){
+tabDiv.innerHTML=`<button onclick="showTab('attendance')" class="activeTab">Attendance</button>
+                  <button onclick="showTab('leave')">Leave</button>
+                  <button onclick="showTab('report')">My Reports</button>`;
+showTab('attendance');
+}
+if(userRole==="BPM"){
+tabDiv.innerHTML=`<button onclick="showTab('approval')" class="activeTab">Leave Approvals</button>
+                  <button onclick="showTab('report')">Block Reports</button>`;
+showTab('approval');
+}
+if(userRole==="Block"){
+tabDiv.innerHTML=`<button onclick="showTab('approval')" class="activeTab">Leave Approvals</button>
+                  <button onclick="showTab('report')">Full Block Reports</button>`;
+showTab('approval');
+}
+}
+
 function showTab(tab){
 attendanceTab.classList.add("hidden");
 leaveTab.classList.add("hidden");
 approvalTab.classList.add("hidden");
+reportTab.classList.add("hidden");
 
-if(tab==="attendance") attendanceTab.classList.remove("hidden");
-if(tab==="leave") leaveTab.classList.remove("hidden");
-if(tab==="approval" && userRole!=="Cadre") approvalTab.classList.remove("hidden");
+Array.from(document.querySelectorAll(".tabs button")).forEach(b=>b.classList.remove("activeTab"));
+
+if(tab==="attendance") {attendanceTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
+if(tab==="leave") {leaveTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(2)").classList.add("activeTab");}
+if(tab==="approval") {approvalTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
+if(tab==="report") {reportTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(3)").classList.add("activeTab");}
 }
 
 /* ---------- ATTENDANCE ---------- */
@@ -129,17 +152,12 @@ function markAttendance(){
 navigator.geolocation.getCurrentPosition(function(pos){
 fetch(API,{
 method:"POST",
-body:JSON.stringify({
-action:"markAttendance",
-name:userName,
-role:userRole,
-block:userBlock,
-latitude:pos.coords.latitude,
-longitude:pos.coords.longitude
-})
+body:JSON.stringify({action:"markAttendance",name:userName,role:userRole,block:userBlock,
+                      latitude:pos.coords.latitude,longitude:pos.coords.longitude})
 }).then(r=>r.json()).then(res=>{
 attMsg.innerText=res.message || "Attendance Submitted";
 loadCounts();
+loadReports();
 });
 });
 }
@@ -148,86 +166,78 @@ loadCounts();
 function applyLeave(){
 fetch(API,{
 method:"POST",
-body:JSON.stringify({
-action:"applyLeave",
-name:userName,
-block:userBlock,
-from:fromDate.value,
-to:toDate.value,
-reason:reason.value
-})
+body:JSON.stringify({action:"applyLeave",name:userName,block:userBlock,
+                      from:fromDate.value,to:toDate.value,reason:reason.value})
 }).then(r=>r.json()).then(res=>{
-leaveMsg.innerText="Leave Submitted";
+leaveMsg.innerText=res.message || "Leave Submitted";
 loadCounts();
+loadReports();
 });
 }
 
 /* ---------- APPROVALS ---------- */
 function loadApprovals(){
+fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
+.then(r=>r.json()).then(data=>{
+let html="<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
+data.slice(1).forEach((row,i)=>{
+if(userRole==="BPM" && row[7]==="Pending_BPM" && row[2]===userBlock)
+html+=`<tr><td>${row[1]}</td><td>${formatDate(row[3])}</td><td>${formatDate(row[4])}</td>
+<td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td>
+<td><button onclick="approveLeave(${i+2},'approveLeaveBPM')">Approve</button></td></tr>`;
+if(userRole==="Block" && row[7]==="Pending_Block")
+html+=`<tr><td>${row[1]}</td><td>${formatDate(row[3])}</td><td>${formatDate(row[4])}</td>
+<td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td>
+<td><button onclick="approveLeave(${i+2},'approveLeaveBlock')">Final Approve</button></td></tr>`;
+});
+approvalTable.innerHTML=html;
+});
+}
+
+function approveLeave(row,action){
+fetch(API,{method:"POST",body:JSON.stringify({action:action,row:row})})
+.then(()=>{loadApprovals(); loadReports();});
+}
+
+/* ---------- REPORTS ---------- */
+function loadReports(){
 fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
 .then(r=>r.json()).then(attData=>{
-
 fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
 .then(r=>r.json()).then(leaveData=>{
-
-let html="<tr><th>Type</th><th>Name</th><th>Status</th><th>Action</th></tr>";
-
-attData.slice(1).forEach((row,i)=>{
-if(userRole==="BPM" && row[7]==="Pending_BPM"){
-html+=`<tr><td>Attendance</td><td>${row[1]}</td>
-<td>${row[7]}</td>
-<td><button onclick="approve(${i+2},'approveAttendanceBPM')">Approve</button></td></tr>`;
-}
-if(userRole==="Block" && row[7]==="Pending_Block"){
-html+=`<tr><td>Attendance</td><td>${row[1]}</td>
-<td>${row[7]}</td>
-<td><button onclick="approve(${i+2},'approveAttendanceBlock')">Final</button></td></tr>`;
-}
+let html="<h5>Attendance Summary</h5><table><tr><th>Name</th><th>Attendance Count</th></tr>";
+let map={};
+attData.slice(1).forEach(r=>{
+if(userRole==="Cadre" && r[1]!==userName) return;
+if(userRole==="BPM" && r[3]!==userBlock) return;
+if(!map[r[1]]) map[r[1]]=0;
+map[r[1]]++;
 });
+for(let n in map) html+=`<tr><td>${n}</td><td>${map[n]}</td></tr>`; html+="</table>";
 
-leaveData.slice(1).forEach((row,i)=>{
-if(userRole==="BPM" && row[7]==="Pending_BPM"){
-html+=`<tr><td>Leave</td><td>${row[1]}</td>
-<td>${row[7]}</td>
-<td><button onclick="approve(${i+2},'approveLeaveBPM')">Approve</button></td></tr>`;
-}
-if(userRole==="Block" && row[7]==="Pending_Block"){
-html+=`<tr><td>Leave</td><td>${row[1]}</td>
-<td>${row[7]}</td>
-<td><button onclick="approve(${i+2},'approveLeaveBlock')">Final</button></td></tr>`;
-}
+html+="<h5>Leave Summary</h5><table><tr><th>Name</th><th>Days</th><th>Status</th></tr>";
+leaveData.slice(1).forEach(r=>{
+if(userRole==="Cadre" && r[1]!==userName) return;
+if(userRole==="BPM" && r[2]!==userBlock) return;
+html+=`<tr><td>${r[1]}</td><td>${r[5]}</td><td>${r[7]}</td></tr>`;
 });
-
-approvalTable.innerHTML=html;
-
+html+="</table>";
+reportContent.innerHTML=html;
 });
-});
-}
-
-function approve(row,action){
-fetch(API,{
-method:"POST",
-body:JSON.stringify({action:action,row:row})
-}).then(r=>r.json()).then(()=>{
-loadApprovals();
 });
 }
 
 /* ---------- COUNTS ---------- */
 function loadCounts(){
 fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
-.then(r=>r.json()).then(data=>{
-attCount.innerText=data.length-1;
-});
-
+.then(r=>r.json()).then(data=>{attCount.innerText=data.length-1;});
 fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
-.then(r=>r.json()).then(data=>{
-leaveCount.innerText=data.length-1;
-});
+.then(r=>r.json()).then(data=>{leaveCount.innerText=data.length-1;});
 }
-</script>
 
+/* ---------- HELPERS ---------- */
+function formatDate(dt){ return new Date(dt).toLocaleDateString(); }
+
+</script>
 </body>
 </html>
-
-
