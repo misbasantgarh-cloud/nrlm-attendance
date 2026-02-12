@@ -38,7 +38,6 @@ header{
 
 h3,h4{margin-top:0;color:#1e3a8a}
 
-/* INPUT */
 input{
     padding:12px;
     margin:8px 0;
@@ -53,7 +52,6 @@ input:focus{
     box-shadow:0 0 0 2px rgba(37,99,235,0.2);
 }
 
-/* BUTTON */
 button{
     padding:10px 18px;
     margin:8px 5px 8px 0;
@@ -69,7 +67,6 @@ button:hover{background:#1e40af;transform:translateY(-1px)}
 .logout{background:#dc2626}
 .logout:hover{background:#991b1b}
 
-/* SUMMARY */
 .summary{
     display:flex;
     flex-wrap:wrap;
@@ -87,33 +84,15 @@ button:hover{background:#1e40af;transform:translateY(-1px)}
     color:#1e3a8a;
 }
 
-/* TABS */
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
 .tabs button{background:#e2e8f0;color:#1e293b}
 .tabs button.activeTab{background:#2563eb;color:white}
 
-/* TABLE */
 .table-container{overflow-x:auto}
-table{
-    width:100%;
-    border-collapse:collapse;
-    min-width:600px;
-}
-th,td{
-    border:1px solid #e2e8f0;
-    padding:10px;
-    text-align:center;
-    font-size:14px;
-}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th,td{border:1px solid #e2e8f0;padding:10px;text-align:center;font-size:14px}
 th{background:#2563eb;color:white}
 
-/* APPROVE BUTTONS */
-.approveBtn{background:#16a34a}
-.approveBtn:hover{background:#15803d}
-.rejectBtn{background:#dc2626}
-.rejectBtn:hover{background:#991b1b}
-
-/* LOADER */
 .loader{
     position:fixed;
     top:0;left:0;
@@ -136,33 +115,40 @@ th{background:#2563eb;color:white}
 }
 @keyframes spin{100%{transform:rotate(360deg)}}
 
-/* TOAST */
-.toast{
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    background:#16a34a;
-    color:white;
-    padding:12px 20px;
-    border-radius:8px;
-    display:none;
-    z-index:9999;
-}
-.toast.error{background:#dc2626}
-
-/* GEO STATUS */
-.geo-status{
-    margin-top:10px;
-    font-size:14px;
-    color:#16a34a;
-}
-
-/* MOBILE */
-@media(max-width:768px){
-    button{width:100%;margin:8px 0}
-    .tabs button{flex:1}
-}
+.geo-status{margin-top:10px;font-size:14px;color:#16a34a}
+@media(max-width:768px){button{width:100%;margin:8px 0}.tabs button{flex:1}}
 .hidden{display:none}
+
+/* ===== BEAUTIFUL POPUP ===== */
+.popup-overlay{
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.5);
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:10000;
+visibility:hidden;
+opacity:0;
+transition:0.3s;
+}
+.popup-overlay.active{visibility:visible;opacity:1}
+.popup-box{
+background:white;
+padding:30px;
+border-radius:15px;
+width:90%;
+max-width:400px;
+text-align:center;
+box-shadow:0 20px 50px rgba(0,0,0,0.2);
+animation:popupScale 0.3s ease;
+}
+@keyframes popupScale{from{transform:scale(0.8);opacity:0}to{transform:scale(1);opacity:1}}
+.popup-icon{font-size:45px;margin-bottom:10px}
+.popup-success{color:#16a34a}
+.popup-error{color:#dc2626}
+.popup-box button{margin-top:20px}
 </style>
 </head>
 <body>
@@ -171,11 +157,17 @@ th{background:#2563eb;color:white}
 <i class="fa-solid fa-location-dot"></i> NRLM Geo Attendance & MIS Portal
 </header>
 
-<div class="loader" id="loader">
-<div class="spinner"></div>
-</div>
+<div class="loader" id="loader"><div class="spinner"></div></div>
 
-<div class="toast" id="toast"></div>
+<!-- POPUP -->
+<div id="customPopup" class="popup-overlay">
+<div class="popup-box">
+<div id="popupIcon" class="popup-icon"></div>
+<h3 id="popupTitle"></h3>
+<p id="popupMessage"></p>
+<button onclick="closePopup()">OK</button>
+</div>
+</div>
 
 <!-- LOGIN -->
 <div class="card" id="loginCard">
@@ -183,7 +175,6 @@ th{background:#2563eb;color:white}
 <input type="text" id="username" placeholder="Username">
 <input type="password" id="password" placeholder="Password">
 <button onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
-<p id="loginMsg" style="color:red;"></p>
 </div>
 
 <!-- DASHBOARD -->
@@ -192,285 +183,96 @@ th{background:#2563eb;color:white}
 <button class="logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
 
 <div class="summary">
-<div><i class="fa-solid fa-calendar-check"></i><br>Total Attendance<br><span id="attCount">0</span></div>
-<div><i class="fa-solid fa-plane-departure"></i><br>Total Leave<br><span id="leaveCount">0</span></div>
+<div>Total Attendance<br><span id="attCount">0</span></div>
+<div>Total Leave<br><span id="leaveCount">0</span></div>
 </div>
 
 <div class="tabs" id="tabs"></div>
 
 <div id="attendanceTab" class="hidden">
-<h4><i class="fa-solid fa-location-crosshairs"></i> Mark Attendance</h4>
-<button onclick="markAttendance()"><i class="fa-solid fa-fingerprint"></i> Mark Attendance</button>
+<h4>Mark Attendance</h4>
+<button onclick="markAttendance()">Mark Attendance</button>
 <div class="geo-status" id="geoStatus"></div>
-<p id="attMsg"></p>
 </div>
 
 <div id="leaveTab" class="hidden">
-<h4><i class="fa-solid fa-file-circle-plus"></i> Apply Leave</h4>
+<h4>Apply Leave</h4>
 <input type="date" id="fromDate">
 <input type="date" id="toDate">
 <input type="text" id="reason" placeholder="Reason">
-<button onclick="applyLeave()"><i class="fa-solid fa-paper-plane"></i> Submit Leave</button>
-<p id="leaveMsg"></p>
+<button onclick="applyLeave()">Submit Leave</button>
 </div>
 
 <div id="approvalLeaveTab" class="hidden">
-<h4><i class="fa-solid fa-user-check"></i> Pending Leave Approvals</h4>
-<div class="table-container">
-<table id="approvalLeaveTable"></table>
-</div>
+<h4>Pending Leave Approvals</h4>
+<div class="table-container"><table id="approvalLeaveTable"></table></div>
 </div>
 
 <div id="approvalAttendanceTab" class="hidden">
-<h4><i class="fa-solid fa-clipboard-check"></i> Pending Attendance Approvals</h4>
-<div class="table-container">
-<table id="approvalAttendanceTable"></table>
-</div>
+<h4>Pending Attendance Approvals</h4>
+<div class="table-container"><table id="approvalAttendanceTable"></table></div>
 </div>
 
 <div id="reportTab" class="hidden">
-<h4><i class="fa-solid fa-chart-column"></i> Attendance & Leave Reports</h4>
+<h4>Reports</h4>
 <div id="reportContent"></div>
 </div>
 
 <script>
-
-const API="https://script.google.com/macros/s/AKfycbzIx9PevabTx_KvKfWb6kdho6FbiJ0R_Vugsdl1xx5ilHLmkvqb4IkYRLywFNahzefpTQ/exec";
+const API="https://script.google.com/macros/s/AKfycbxgG6WMmLhSNqyhQ7VCvN9gDfaiATS60otuAooqr5EOxOJakML4uCCuPc1YxnAObSo3Pg/exec";
 let userRole="",userBlock="",userName="";
 
-/* ---------- LOGIN ---------- */
+/* POPUP */
+function showPopup(title,message,type="success"){
+const popup=document.getElementById("customPopup");
+const icon=document.getElementById("popupIcon");
+popup.classList.add("active");
+document.getElementById("popupTitle").innerText=title;
+document.getElementById("popupMessage").innerText=message;
+icon.className="popup-icon "+(type==="error"?"popup-error":"popup-success");
+icon.innerHTML= type==="error"?
+"<i class='fa-solid fa-circle-xmark'></i>":
+"<i class='fa-solid fa-circle-check'></i>";
+}
+function closePopup(){document.getElementById("customPopup").classList.remove("active");}
+
+/* LOGIN */
 function login(){
-fetch(API,{
-  method:"POST",
-  body:JSON.stringify({action:"login",username:username.value,password:password.value})
-}).then(r=>r.json()).then(res=>{
-  if(res.status==="success"){
-    userRole=res.role; userBlock=res.block; userName=username.value;
-    showDashboard();
-  } else { loginMsg.innerText=res.message; }
+fetch(API,{method:"POST",
+body:JSON.stringify({action:"login",username:username.value,password:password.value})})
+.then(r=>r.json()).then(res=>{
+if(res.status==="success"){
+userRole=res.role;userBlock=res.block;userName=username.value;
+showDashboard();
+}else{
+showPopup("Login Failed",res.message,"error");
+}
 });
 }
-function logout(){ location.reload(); }
 
-/* ---------- DASHBOARD ---------- */
-function showDashboard(){
-loginCard.classList.add("hidden");
-dashboard.classList.remove("hidden");
-welcome.innerText=`Welcome ${userRole} (${userBlock})`;
-setupTabs();
-loadCounts();
-if(userRole!=="Cadre"){ loadLeaveApprovals(); loadAttendanceApprovals(); }
-loadReports();
-}
-
-/* ---------- TABS ---------- */
-function setupTabs(){
-const tabDiv=document.getElementById("tabs"); tabDiv.innerHTML="";
-if(userRole==="Cadre"){
-tabDiv.innerHTML=`<button onclick="showTab('attendance')" class="activeTab">Attendance</button>
-                  <button onclick="showTab('leave')">Leave</button>
-                  <button onclick="showTab('report')">My Reports</button>`;
-showTab('attendance');
-}
-if(userRole==="BPM"){
-tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
-                  <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
-                  <button onclick="showTab('report')">Block Reports</button>`;
-showTab('approvalLeave');
-}
-if(userRole==="Block"){
-tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
-                  <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
-                  <button onclick="showTab('report')">Full Block Reports</button>`;
-showTab('approvalLeave');
-}
-}
-function showTab(tab){
-attendanceTab.classList.add("hidden"); leaveTab.classList.add("hidden");
-approvalLeaveTab.classList.add("hidden"); approvalAttendanceTab.classList.add("hidden"); reportTab.classList.add("hidden");
-Array.from(document.querySelectorAll(".tabs button")).forEach(b=>b.classList.remove("activeTab"));
-if(tab==="attendance") {attendanceTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
-if(tab==="leave") {leaveTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(2)").classList.add("activeTab");}
-if(tab==="approvalLeave") {approvalLeaveTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
-if(tab==="approvalAttendance") {approvalAttendanceTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(2)").classList.add("activeTab");}
-if(tab==="report") {reportTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(3)").classList.add("activeTab");}
-}
-
-/* ---------- ATTENDANCE ---------- */
+/* ATTENDANCE */
 function markAttendance(){
 navigator.geolocation.getCurrentPosition(function(pos){
-fetch(API,{
-method:"POST",
+fetch(API,{method:"POST",
 body:JSON.stringify({action:"markAttendance",name:userName,role:userRole,block:userBlock,
-                      latitude:pos.coords.latitude,longitude:pos.coords.longitude})
-}).then(r=>r.json()).then(res=>{
-attMsg.innerText=res.message || "Attendance Submitted";
-loadCounts(); loadReports();
+latitude:pos.coords.latitude,longitude:pos.coords.longitude})})
+.then(r=>r.json()).then(res=>{
+showPopup("Attendance",res.message||"Attendance Submitted Successfully");
 });
+},function(){
+showPopup("GPS Error","GPS Not Enabled","error");
 });
 }
 
-/* ---------- LEAVE ---------- */
+/* LEAVE */
 function applyLeave(){
-fetch(API,{
-method:"POST",
+fetch(API,{method:"POST",
 body:JSON.stringify({action:"applyLeave",name:userName,block:userBlock,
-                      from:fromDate.value,to:toDate.value,reason:reason.value})
-}).then(r=>r.json()).then(res=>{
-leaveMsg.innerText=res.message || "Leave Submitted";
-loadCounts(); loadReports();
+from:fromDate.value,to:toDate.value,reason:reason.value})})
+.then(r=>r.json()).then(res=>{
+showPopup("Leave Application",res.message||"Leave Submitted Successfully");
 });
 }
-
-/* ---------- LEAVE APPROVALS ---------- */
-let leaveApprovalDataFull=[], leaveApprovalPage=1, leaveApprovalPageSize=10;
-function loadLeaveApprovals(){
-  fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
-  .then(r=>r.json()).then(data=>{
-    leaveApprovalDataFull=data.slice(1); leaveApprovalPage=1; renderLeaveApprovalTable();
-  });
-}
-function renderLeaveApprovalTable(){
-  let start=(leaveApprovalPage-1)*leaveApprovalPageSize;
-  let end=start+leaveApprovalPageSize;
-  let pageData=leaveApprovalDataFull.slice(start,end);
-  let html="<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
-  pageData.forEach((row,i)=>{
-    const sheetRow = i + 2 + (leaveApprovalPage-1)*leaveApprovalPageSize; // Correct row for Sheet
-    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[2]===userBlock)
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[3]).toLocaleDateString()}</td>
-      <td>${new Date(row[4]).toLocaleDateString()}</td><td>${row[5]}</td><td>${row[6]}</td>
-      <td>${row[7]}</td><td><button onclick="approveLeave(${sheetRow},'approveLeaveBPM')">Approve</button></td></tr>`;
-    if(userRole==="Block" && row[7]==="Pending_Block")
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[3]).toLocaleDateString()}</td>
-      <td>${new Date(row[4]).toLocaleDateString()}</td><td>${row[5]}</td><td>${row[6]}</td>
-      <td>${row[7]}</td><td><button onclick="approveLeave(${sheetRow},'approveLeaveBlock')">Final Approve</button></td></tr>`;
-  });
-  html+=`<tr><td colspan="7"><button onclick="changeLeaveApprovalPage(-1)">Prev</button>
-  Page ${leaveApprovalPage} of ${Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize)}
-  <button onclick="changeLeaveApprovalPage(1)">Next</button></td></tr>`;
-  approvalLeaveTable.innerHTML=html;
-}
-function changeLeaveApprovalPage(delta){leaveApprovalPage=Math.max(1,Math.min(Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize),leaveApprovalPage+delta)); renderLeaveApprovalTable();}
-
-// Updated Leave Approval with Sheet update
-function approveLeave(row, action){
-  fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
-  .then(r=>r.json())
-  .then(res=>{
-      if(res.status==="success"){
-          loadLeaveApprovals();
-          loadReports(); loadCounts();
-      } else { alert("Approval failed: "+res.message); }
-  });
-}
-
-/* ---------- ATTENDANCE APPROVAL ---------- */
-let attApprovalDataFull=[], attApprovalPage=1, attApprovalPageSize=10;
-function loadAttendanceApprovals(){
-  fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
-  .then(r=>r.json()).then(data=>{attApprovalDataFull=data.slice(1); attApprovalPage=1; renderAttendanceApprovalTable();});
-}
-function renderAttendanceApprovalTable(){
-  let start=(attApprovalPage-1)*attApprovalPageSize;
-  let end=start+attApprovalPageSize;
-  let pageData=attApprovalDataFull.slice(start,end);
-  let html="<tr><th>Name</th><th>Date</th><th>Block</th><th>Status</th><th>Action</th></tr>";
-  pageData.forEach((row,i)=>{
-    const sheetRow = i + 2 + (attApprovalPage-1)*attApprovalPageSize; // Correct row for Sheet
-    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[3]===userBlock)
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[0]).toLocaleDateString()}</td><td>${row[3]}</td>
-      <td>${row[7]}</td><td><button onclick="approveAttendance(${sheetRow},'approveAttendanceBPM')">Approve</button></td></tr>`;
-    if(userRole==="Block" && row[7]==="Pending_Block")
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[0]).toLocaleDateString()}</td><td>${row[3]}</td>
-      <td>${row[7]}</td><td><button onclick="approveAttendance(${sheetRow},'approveAttendanceBlock')">Final Approve</button></td></tr>`;
-  });
-  html+=`<tr><td colspan="5"><button onclick="changeAttendanceApprovalPage(-1)">Prev</button>
-  Page ${attApprovalPage} of ${Math.ceil(attApprovalDataFull.length/attApprovalPageSize)}
-  <button onclick="changeAttendanceApprovalPage(1)">Next</button></td></tr>`;
-  approvalAttendanceTable.innerHTML=html;
-}
-function changeAttendanceApprovalPage(delta){attApprovalPage=Math.max(1,Math.min(Math.ceil(attApprovalDataFull.length/attApprovalPageSize),attApprovalPage+delta)); renderAttendanceApprovalTable();}
-function approveAttendance(row, action){
-  fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
-  .then(r=>r.json())
-  .then(res=>{
-      if(res.status==="success"){
-          loadAttendanceApprovals();
-          loadReports(); loadCounts();
-      } else { alert("Approval failed: "+res.message); }
-  });
-}
-
-/* ---------- REPORTS ---------- */
-let reportDataFull=[], reportPage=1, reportPageSize=10;
-function loadReports(){
-fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
-.then(r=>r.json()).then(attData=>{
-fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
-.then(r=>r.json()).then(leaveData=>{
-  let attMap={};
-  attData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==userName)return;if(userRole==="BPM"&&r[3]!==userBlock)return; attMap[r[1]]=(attMap[r[1]]||0)+1;});
-  reportDataFull=Object.entries(attMap).map(([name,count])=>({name,count})); reportPage=1; renderReportTable(leaveData);
-});
-});
-}
-function renderReportTable(leaveData){
-let start=(reportPage-1)*reportPageSize;
-let end=start+reportPageSize;
-let pageData=reportDataFull.slice(start,end);
-let html="<h5>Attendance Summary</h5><table><tr><th>Name</th><th>Attendance Count</th></tr>";
-pageData.forEach(r=>html+=`<tr><td>${r.name}</td><td>${r.count}</td></tr>`);
-html+=`<tr><td colspan="2"><button onclick="changeReportPage(-1)">Prev</button>
-Page ${reportPage} of ${Math.ceil(reportDataFull.length/reportPageSize)}
-<button onclick="changeReportPage(1)">Next</button></td></tr></table>`;
-html+="<h5>Leave Summary</h5><table><tr><th>Name</th><th>Days</th><th>Status</th></tr>";
-leaveData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==userName)return;if(userRole==="BPM"&&r[2]!==userBlock)return; html+=`<tr><td>${r[1]}</td><td>${r[5]}</td><td>${r[7]}</td></tr>`;});
-html+="</table>"; reportContent.innerHTML=html;
-}
-function changeReportPage(delta){reportPage=Math.max(1,Math.min(Math.ceil(reportDataFull.length/reportPageSize),reportPage+delta)); renderReportTable([]);}
-
-/* ---------- COUNTS ---------- */
-function loadCounts(){
-fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})}).then(r=>r.json()).then(data=>{
-    if(userRole==="Cadre"){
-        let count = data.slice(1).filter(d=>d[1]===userName).length;
-        attCount.innerText=count;
-    } else if(userRole==="BPM" || userRole==="Block"){
-        attCount.innerText=data.length-1;
-    }
-});
-fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.json()).then(data=>{
-    if(userRole==="Cadre"){
-        let count = data.slice(1).filter(d=>d[1]===userName).length;
-        leaveCount.innerText=count;
-    } else if(userRole==="BPM" || userRole==="Block"){
-        leaveCount.innerText=data.length-1;
-    }
-});
-}
-
-    /* ===== LOADER ===== */
-function showLoader(){document.getElementById("loader").style.display="flex";}
-function hideLoader(){document.getElementById("loader").style.display="none";}
-
-/* ===== TOAST ===== */
-function showToast(msg,type="success"){
-let t=document.getElementById("toast");
-t.innerText=msg;
-t.className="toast "+(type==="error"?"error":"");
-t.style.display="block";
-setTimeout(()=>{t.style.display="none"},3000);
-}
-
-/* ===== GEO STATUS ===== */
-navigator.geolocation.getCurrentPosition(
-()=>{document.getElementById("geoStatus").innerHTML="<i class='fa-solid fa-circle-check'></i> GPS Ready";},
-()=>{document.getElementById("geoStatus").innerHTML="<i class='fa-solid fa-triangle-exclamation'></i> GPS Not Enabled";}
-);
-
 </script>
 </body>
 </html>
-
-
