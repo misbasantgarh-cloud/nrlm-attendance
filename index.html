@@ -82,7 +82,7 @@ th{background:#1e3a8a;color:white}
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbwDVw_-99gmbq8Cx4IInG4PGT7IufXWa2j-yhfANFum3Qd2kh_RA8ROFL48kGPmr-u8Yw/exec";
+const API="https://script.google.com/macros/s/AKfycbyFggEz2BcVmnp7KWYUqUU4qmMsl9DVyZllUMdTCvAFU152UjziqMpKYrT50yvZFa5-2g/exec";
 let userRole="",userBlock="",userName="";
 
 /* ---------- LOGIN ---------- */
@@ -97,7 +97,6 @@ fetch(API,{
   } else { loginMsg.innerText=res.message; }
 });
 }
-
 function logout(){ location.reload(); }
 
 /* ---------- DASHBOARD ---------- */
@@ -174,7 +173,7 @@ loadCounts(); loadReports();
 });
 }
 
-/* ---------- LEAVE APPROVALS ---------- */
+/* ---------- APPROVALS ---------- */
 let leaveApprovalDataFull=[], leaveApprovalPage=1, leaveApprovalPageSize=10;
 function loadLeaveApprovals(){
   fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
@@ -204,7 +203,6 @@ function renderLeaveApprovalTable(){
 }
 function changeLeaveApprovalPage(delta){leaveApprovalPage=Math.max(1,Math.min(Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize),leaveApprovalPage+delta)); renderLeaveApprovalTable();}
 
-// Updated Leave Approval with front-end status update
 function approveLeave(row, action){
   fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
   .then(r=>r.json())
@@ -219,15 +217,12 @@ function approveLeave(row, action){
               tr.cells[5].innerText = "Approved";
               tr.cells[6].innerHTML = `<button disabled>Final Approved</button>`;
           }
-          loadReports();
-          loadCounts();
-      } else {
-          alert("Approval failed: "+res.message);
-      }
+          loadReports(); loadCounts();
+      } else { alert("Approval failed: "+res.message); }
   });
 }
 
-/* ---------- ATTENDANCE APPROVALS ---------- */
+/* ---------- ATTENDANCE APPROVAL ---------- */
 let attApprovalDataFull=[], attApprovalPage=1, attApprovalPageSize=10;
 function loadAttendanceApprovals(){
   fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
@@ -253,7 +248,6 @@ function renderAttendanceApprovalTable(){
 }
 function changeAttendanceApprovalPage(delta){attApprovalPage=Math.max(1,Math.min(Math.ceil(attApprovalDataFull.length/attApprovalPageSize),attApprovalPage+delta)); renderAttendanceApprovalTable();}
 
-// Updated Attendance Approval with front-end status update
 function approveAttendance(row, action){
   fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
   .then(r=>r.json())
@@ -268,11 +262,8 @@ function approveAttendance(row, action){
               tr.cells[3].innerText = "Approved";
               tr.cells[4].innerHTML = `<button disabled>Final Approved</button>`;
           }
-          loadReports();
-          loadCounts();
-      } else {
-          alert("Approval failed: "+res.message);
-      }
+          loadReports(); loadCounts();
+      } else { alert("Approval failed: "+res.message); }
   });
 }
 
@@ -310,17 +301,13 @@ fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})}).then(r=
     if(userRole==="Cadre"){
         let count = data.slice(1).filter(d=>d[1]===userName).length;
         attCount.innerText=count;
-    } else if(userRole==="BPM" || userRole==="Block"){
-        attCount.innerText=data.length-1;
-    }
+    } else { attCount.innerText=data.length-1; }
 });
 fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.json()).then(data=>{
     if(userRole==="Cadre"){
         let count = data.slice(1).filter(d=>d[1]===userName).length;
         leaveCount.innerText=count;
-    } else if(userRole==="BPM" || userRole==="Block"){
-        leaveCount.innerText=data.length-1;
-    }
+    } else { leaveCount.innerText=data.length-1; }
 });
 }
 </script>
