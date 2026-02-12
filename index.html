@@ -163,13 +163,33 @@ th{background:#2563eb;color:white}
     .tabs button{flex:1}
 }
 .hidden{display:none}
+
+    /* Define the animation */
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Apply the animation to the element */
+.blink-me {
+  animation: blink 1s linear infinite; /* 1s duration, linear timing, infinite loop */
+}
+
 </style>
 </head>
 <body>
 
 <header>
 <i class="fa-solid fa-location-dot"></i> DUDU BASANTGARH LIVE ATTENDANCE PORTAL
-    <marquee><span style="color: red;">Mark Your Attendance at Designated Locations</span></marquee>
+    <span class="blink-me" style="color: red;">mark your attendance at designated locations</span>
+
 
 </header>
 
@@ -474,6 +494,7 @@ navigator.geolocation.getCurrentPosition(
 </script>
 </body>
 </html>
+
 
 
 
