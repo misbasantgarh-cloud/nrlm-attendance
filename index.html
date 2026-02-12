@@ -14,8 +14,6 @@ body{
     font-family:'Segoe UI',sans-serif;
     background:linear-gradient(to right,#eef2ff,#f8fafc);
 }
-
-/* HEADER */
 header{
     background:linear-gradient(135deg,#1e3a8a,#2563eb);
     color:white;
@@ -24,8 +22,6 @@ header{
     font-size:22px;
     font-weight:600;
 }
-
-/* CARD */
 .card{
     background:white;
     margin:20px auto;
@@ -35,10 +31,7 @@ header{
     border-radius:15px;
     box-shadow:0 10px 25px rgba(0,0,0,0.08);
 }
-
 h3,h4{margin-top:0;color:#1e3a8a}
-
-/* INPUT */
 input{
     padding:12px;
     margin:8px 0;
@@ -52,8 +45,6 @@ input:focus{
     border-color:#2563eb;
     box-shadow:0 0 0 2px rgba(37,99,235,0.2);
 }
-
-/* BUTTON */
 button{
     padding:10px 18px;
     margin:8px 5px 8px 0;
@@ -63,106 +54,36 @@ button{
     border-radius:8px;
     cursor:pointer;
     font-weight:500;
-    transition:0.3s;
 }
-button:hover{background:#1e40af;transform:translateY(-1px)}
+button:hover{background:#1e40af}
 .logout{background:#dc2626}
-.logout:hover{background:#991b1b}
-
-/* SUMMARY */
-.summary{
-    display:flex;
-    flex-wrap:wrap;
-    gap:15px;
-    margin-bottom:20px;
-}
-.summary div{
-    flex:1;
-    min-width:150px;
-    padding:15px;
-    border-radius:12px;
-    background:linear-gradient(135deg,#e0f2fe,#f1f5f9);
-    text-align:center;
-    font-weight:600;
-    color:#1e3a8a;
-}
-
-/* TABS */
+.hidden{display:none}
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
 .tabs button{background:#e2e8f0;color:#1e293b}
 .tabs button.activeTab{background:#2563eb;color:white}
-
-/* TABLE */
 .table-container{overflow-x:auto}
-table{
-    width:100%;
-    border-collapse:collapse;
-    min-width:600px;
-}
-th,td{
-    border:1px solid #e2e8f0;
-    padding:10px;
-    text-align:center;
-    font-size:14px;
-}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th,td{border:1px solid #e2e8f0;padding:10px;text-align:center;font-size:14px}
 th{background:#2563eb;color:white}
-
-/* APPROVE BUTTONS */
-.approveBtn{background:#16a34a}
-.approveBtn:hover{background:#15803d}
-.rejectBtn{background:#dc2626}
-.rejectBtn:hover{background:#991b1b}
-
-/* LOADER */
 .loader{
-    position:fixed;
-    top:0;left:0;
-    width:100%;
-    height:100%;
+    position:fixed;top:0;left:0;width:100%;height:100%;
     background:rgba(255,255,255,0.7);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:9999;
-    display:none;
+    display:flex;justify-content:center;align-items:center;
+    z-index:9999;display:none;
 }
 .spinner{
     border:6px solid #e5e7eb;
     border-top:6px solid #2563eb;
     border-radius:50%;
-    width:50px;
-    height:50px;
+    width:50px;height:50px;
     animation:spin 1s linear infinite;
 }
 @keyframes spin{100%{transform:rotate(360deg)}}
-
-/* TOAST */
-.toast{
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    background:#16a34a;
-    color:white;
-    padding:12px 20px;
-    border-radius:8px;
-    display:none;
-    z-index:9999;
-}
-.toast.error{background:#dc2626}
-
-/* GEO STATUS */
-.geo-status{
-    margin-top:10px;
-    font-size:14px;
-    color:#16a34a;
-}
-
-/* MOBILE */
+.geo-status{margin-top:10px;font-size:14px;color:#16a34a}
 @media(max-width:768px){
     button{width:100%;margin:8px 0}
     .tabs button{flex:1}
 }
-.hidden{display:none}
 </style>
 </head>
 <body>
@@ -175,15 +96,12 @@ th{background:#2563eb;color:white}
 <div class="spinner"></div>
 </div>
 
-<div class="toast" id="toast"></div>
-
 <!-- LOGIN -->
 <div class="card" id="loginCard">
 <h3><i class="fa-solid fa-user"></i> Login</h3>
 <input type="text" id="username" placeholder="Username">
 <input type="password" id="password" placeholder="Password">
 <button onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
-<p id="loginMsg" style="color:red;"></p>
 </div>
 
 <!-- DASHBOARD -->
@@ -191,54 +109,228 @@ th{background:#2563eb;color:white}
 <h3 id="welcome"></h3>
 <button class="logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
 
-<div class="summary">
-<div><i class="fa-solid fa-calendar-check"></i><br>Total Attendance<br><span id="attCount">0</span></div>
-<div><i class="fa-solid fa-plane-departure"></i><br>Total Leave<br><span id="leaveCount">0</span></div>
-</div>
-
 <div class="tabs" id="tabs"></div>
 
 <div id="attendanceTab" class="hidden">
-<h4><i class="fa-solid fa-location-crosshairs"></i> Mark Attendance</h4>
-<button onclick="markAttendance()"><i class="fa-solid fa-fingerprint"></i> Mark Attendance</button>
+<h4>Mark Attendance</h4>
+<button onclick="markAttendance()">Mark Attendance</button>
 <div class="geo-status" id="geoStatus"></div>
-<p id="attMsg"></p>
 </div>
 
 <div id="leaveTab" class="hidden">
-<h4><i class="fa-solid fa-file-circle-plus"></i> Apply Leave</h4>
+<h4>Apply Leave</h4>
 <input type="date" id="fromDate">
 <input type="date" id="toDate">
 <input type="text" id="reason" placeholder="Reason">
-<button onclick="applyLeave()"><i class="fa-solid fa-paper-plane"></i> Submit Leave</button>
-<p id="leaveMsg"></p>
+<button onclick="applyLeave()">Submit Leave</button>
 </div>
 
-<div id="approvalLeaveTab" class="hidden">
-<h4><i class="fa-solid fa-user-check"></i> Pending Leave Approvals</h4>
-<div class="table-container">
-<table id="approvalLeaveTable"></table>
-</div>
 </div>
 
-<div id="approvalAttendanceTab" class="hidden">
-<h4><i class="fa-solid fa-clipboard-check"></i> Pending Attendance Approvals</h4>
-<div class="table-container">
-<table id="approvalAttendanceTable"></table>
-</div>
-</div>
-
-<div id="reportTab" class="hidden">
-<h4><i class="fa-solid fa-chart-column"></i> Attendance & Leave Reports</h4>
-<div id="reportContent"></div>
+<!-- ===== POPUP MODAL ===== -->
+<div id="popupModal" style="
+display:none;
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.4);
+justify-content:center;
+align-items:center;
+z-index:10000;">
+  
+  <div style="
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  width:90%;
+  max-width:400px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+    
+    <p id="popupMessage" style="margin-bottom:20px;font-weight:500;"></p>
+    
+    <button onclick="closePopup()" 
+    style="padding:8px 20px;border-radius:6px;border:none;background:#2563eb;color:white;">
+      OK
+    </button>
+  </div>
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxgG6WMmLhSNqyhQ7VCvN9gDfaiATS60otuAooqr5EOxOJakML4uCCuPc1YxnAObSo3Pg/exec";
+const API="<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NRLM Geo Attendance & MIS</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:'Segoe UI',sans-serif;
+    background:linear-gradient(to right,#eef2ff,#f8fafc);
+}
+header{
+    background:linear-gradient(135deg,#1e3a8a,#2563eb);
+    color:white;
+    padding:18px;
+    text-align:center;
+    font-size:22px;
+    font-weight:600;
+}
+.card{
+    background:white;
+    margin:20px auto;
+    padding:25px;
+    width:95%;
+    max-width:1100px;
+    border-radius:15px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.08);
+}
+h3,h4{margin-top:0;color:#1e3a8a}
+input{
+    padding:12px;
+    margin:8px 0;
+    width:100%;
+    max-width:400px;
+    border-radius:8px;
+    border:1px solid #cbd5e1;
+}
+input:focus{
+    outline:none;
+    border-color:#2563eb;
+    box-shadow:0 0 0 2px rgba(37,99,235,0.2);
+}
+button{
+    padding:10px 18px;
+    margin:8px 5px 8px 0;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:500;
+}
+button:hover{background:#1e40af}
+.logout{background:#dc2626}
+.hidden{display:none}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.tabs button{background:#e2e8f0;color:#1e293b}
+.tabs button.activeTab{background:#2563eb;color:white}
+.table-container{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th,td{border:1px solid #e2e8f0;padding:10px;text-align:center;font-size:14px}
+th{background:#2563eb;color:white}
+.loader{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(255,255,255,0.7);
+    display:flex;justify-content:center;align-items:center;
+    z-index:9999;display:none;
+}
+.spinner{
+    border:6px solid #e5e7eb;
+    border-top:6px solid #2563eb;
+    border-radius:50%;
+    width:50px;height:50px;
+    animation:spin 1s linear infinite;
+}
+@keyframes spin{100%{transform:rotate(360deg)}}
+.geo-status{margin-top:10px;font-size:14px;color:#16a34a}
+@media(max-width:768px){
+    button{width:100%;margin:8px 0}
+    .tabs button{flex:1}
+}
+</style>
+</head>
+<body>
+
+<header>
+<i class="fa-solid fa-location-dot"></i> NRLM Geo Attendance & MIS Portal
+</header>
+
+<div class="loader" id="loader">
+<div class="spinner"></div>
+</div>
+
+<!-- LOGIN -->
+<div class="card" id="loginCard">
+<h3><i class="fa-solid fa-user"></i> Login</h3>
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
+<button onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="card hidden" id="dashboard">
+<h3 id="welcome"></h3>
+<button class="logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+
+<div class="tabs" id="tabs"></div>
+
+<div id="attendanceTab" class="hidden">
+<h4>Mark Attendance</h4>
+<button onclick="markAttendance()">Mark Attendance</button>
+<div class="geo-status" id="geoStatus"></div>
+</div>
+
+<div id="leaveTab" class="hidden">
+<h4>Apply Leave</h4>
+<input type="date" id="fromDate">
+<input type="date" id="toDate">
+<input type="text" id="reason" placeholder="Reason">
+<button onclick="applyLeave()">Submit Leave</button>
+</div>
+
+</div>
+
+<!-- ===== POPUP MODAL ===== -->
+<div id="popupModal" style="
+display:none;
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.4);
+justify-content:center;
+align-items:center;
+z-index:10000;">
+  
+  <div style="
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  width:90%;
+  max-width:400px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+    
+    <p id="popupMessage" style="margin-bottom:20px;font-weight:500;"></p>
+    
+    <button onclick="closePopup()" 
+    style="padding:8px 20px;border-radius:6px;border:none;background:#2563eb;color:white;">
+      OK
+    </button>
+  </div>
+</div>
+
+<script>
+
+const API="YOUR_WEB_APP_URL_HERE";
 let userRole="",userBlock="",userName="";
 
-/* ---------- LOGIN ---------- */
+/* ===== POPUP ===== */
+function showPopup(message){
+  document.getElementById("popupMessage").innerText = message;
+  document.getElementById("popupModal").style.display = "flex";
+}
+function closePopup(){
+  document.getElementById("popupModal").style.display = "none";
+}
+
+/* LOGIN */
 function login(){
 fetch(API,{
   method:"POST",
@@ -247,231 +339,106 @@ fetch(API,{
   if(res.status==="success"){
     userRole=res.role; userBlock=res.block; userName=username.value;
     showDashboard();
-  } else { loginMsg.innerText=res.message; }
+  } else {
+    showPopup(res.message);
+  }
 });
 }
+
 function logout(){ location.reload(); }
 
-/* ---------- DASHBOARD ---------- */
-function showDashboard(){
-loginCard.classList.add("hidden");
-dashboard.classList.remove("hidden");
-welcome.innerText=`Welcome ${userRole} (${userBlock})`;
-setupTabs();
-loadCounts();
-if(userRole!=="Cadre"){ loadLeaveApprovals(); loadAttendanceApprovals(); }
-loadReports();
-}
-
-/* ---------- TABS ---------- */
-function setupTabs(){
-const tabDiv=document.getElementById("tabs"); tabDiv.innerHTML="";
-if(userRole==="Cadre"){
-tabDiv.innerHTML=`<button onclick="showTab('attendance')" class="activeTab">Attendance</button>
-                  <button onclick="showTab('leave')">Leave</button>
-                  <button onclick="showTab('report')">My Reports</button>`;
-showTab('attendance');
-}
-if(userRole==="BPM"){
-tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
-                  <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
-                  <button onclick="showTab('report')">Block Reports</button>`;
-showTab('approvalLeave');
-}
-if(userRole==="Block"){
-tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
-                  <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
-                  <button onclick="showTab('report')">Full Block Reports</button>`;
-showTab('approvalLeave');
-}
-}
-function showTab(tab){
-attendanceTab.classList.add("hidden"); leaveTab.classList.add("hidden");
-approvalLeaveTab.classList.add("hidden"); approvalAttendanceTab.classList.add("hidden"); reportTab.classList.add("hidden");
-Array.from(document.querySelectorAll(".tabs button")).forEach(b=>b.classList.remove("activeTab"));
-if(tab==="attendance") {attendanceTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
-if(tab==="leave") {leaveTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(2)").classList.add("activeTab");}
-if(tab==="approvalLeave") {approvalLeaveTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
-if(tab==="approvalAttendance") {approvalAttendanceTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(2)").classList.add("activeTab");}
-if(tab==="report") {reportTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(3)").classList.add("activeTab");}
-}
-
-/* ---------- ATTENDANCE ---------- */
+/* ATTENDANCE */
 function markAttendance(){
 navigator.geolocation.getCurrentPosition(function(pos){
 fetch(API,{
 method:"POST",
 body:JSON.stringify({action:"markAttendance",name:userName,role:userRole,block:userBlock,
-                      latitude:pos.coords.latitude,longitude:pos.coords.longitude})
+latitude:pos.coords.latitude,longitude:pos.coords.longitude})
 }).then(r=>r.json()).then(res=>{
-attMsg.innerText=res.message || "Attendance Submitted";
-loadCounts(); loadReports();
+showPopup(res.message || "Attendance Submitted");
 });
 });
 }
 
-/* ---------- LEAVE ---------- */
+/* LEAVE */
 function applyLeave(){
 fetch(API,{
 method:"POST",
 body:JSON.stringify({action:"applyLeave",name:userName,block:userBlock,
-                      from:fromDate.value,to:toDate.value,reason:reason.value})
+from:fromDate.value,to:toDate.value,reason:reason.value})
 }).then(r=>r.json()).then(res=>{
-leaveMsg.innerText=res.message || "Leave Submitted";
-loadCounts(); loadReports();
+showPopup(res.message || "Leave Submitted");
 });
 }
 
-/* ---------- LEAVE APPROVALS ---------- */
-let leaveApprovalDataFull=[], leaveApprovalPage=1, leaveApprovalPageSize=10;
-function loadLeaveApprovals(){
-  fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
-  .then(r=>r.json()).then(data=>{
-    leaveApprovalDataFull=data.slice(1); leaveApprovalPage=1; renderLeaveApprovalTable();
-  });
-}
-function renderLeaveApprovalTable(){
-  let start=(leaveApprovalPage-1)*leaveApprovalPageSize;
-  let end=start+leaveApprovalPageSize;
-  let pageData=leaveApprovalDataFull.slice(start,end);
-  let html="<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
-  pageData.forEach((row,i)=>{
-    const sheetRow = i + 2 + (leaveApprovalPage-1)*leaveApprovalPageSize; // Correct row for Sheet
-    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[2]===userBlock)
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[3]).toLocaleDateString()}</td>
-      <td>${new Date(row[4]).toLocaleDateString()}</td><td>${row[5]}</td><td>${row[6]}</td>
-      <td>${row[7]}</td><td><button onclick="approveLeave(${sheetRow},'approveLeaveBPM')">Approve</button></td></tr>`;
-    if(userRole==="Block" && row[7]==="Pending_Block")
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[3]).toLocaleDateString()}</td>
-      <td>${new Date(row[4]).toLocaleDateString()}</td><td>${row[5]}</td><td>${row[6]}</td>
-      <td>${row[7]}</td><td><button onclick="approveLeave(${sheetRow},'approveLeaveBlock')">Final Approve</button></td></tr>`;
-  });
-  html+=`<tr><td colspan="7"><button onclick="changeLeaveApprovalPage(-1)">Prev</button>
-  Page ${leaveApprovalPage} of ${Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize)}
-  <button onclick="changeLeaveApprovalPage(1)">Next</button></td></tr>`;
-  approvalLeaveTable.innerHTML=html;
-}
-function changeLeaveApprovalPage(delta){leaveApprovalPage=Math.max(1,Math.min(Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize),leaveApprovalPage+delta)); renderLeaveApprovalTable();}
-
-// Updated Leave Approval with Sheet update
-function approveLeave(row, action){
-  fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
-  .then(r=>r.json())
-  .then(res=>{
-      if(res.status==="success"){
-          loadLeaveApprovals();
-          loadReports(); loadCounts();
-      } else { alert("Approval failed: "+res.message); }
-  });
-}
-
-/* ---------- ATTENDANCE APPROVAL ---------- */
-let attApprovalDataFull=[], attApprovalPage=1, attApprovalPageSize=10;
-function loadAttendanceApprovals(){
-  fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
-  .then(r=>r.json()).then(data=>{attApprovalDataFull=data.slice(1); attApprovalPage=1; renderAttendanceApprovalTable();});
-}
-function renderAttendanceApprovalTable(){
-  let start=(attApprovalPage-1)*attApprovalPageSize;
-  let end=start+attApprovalPageSize;
-  let pageData=attApprovalDataFull.slice(start,end);
-  let html="<tr><th>Name</th><th>Date</th><th>Block</th><th>Status</th><th>Action</th></tr>";
-  pageData.forEach((row,i)=>{
-    const sheetRow = i + 2 + (attApprovalPage-1)*attApprovalPageSize; // Correct row for Sheet
-    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[3]===userBlock)
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[0]).toLocaleDateString()}</td><td>${row[3]}</td>
-      <td>${row[7]}</td><td><button onclick="approveAttendance(${sheetRow},'approveAttendanceBPM')">Approve</button></td></tr>`;
-    if(userRole==="Block" && row[7]==="Pending_Block")
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[0]).toLocaleDateString()}</td><td>${row[3]}</td>
-      <td>${row[7]}</td><td><button onclick="approveAttendance(${sheetRow},'approveAttendanceBlock')">Final Approve</button></td></tr>`;
-  });
-  html+=`<tr><td colspan="5"><button onclick="changeAttendanceApprovalPage(-1)">Prev</button>
-  Page ${attApprovalPage} of ${Math.ceil(attApprovalDataFull.length/attApprovalPageSize)}
-  <button onclick="changeAttendanceApprovalPage(1)">Next</button></td></tr>`;
-  approvalAttendanceTable.innerHTML=html;
-}
-function changeAttendanceApprovalPage(delta){attApprovalPage=Math.max(1,Math.min(Math.ceil(attApprovalDataFull.length/attApprovalPageSize),attApprovalPage+delta)); renderAttendanceApprovalTable();}
-function approveAttendance(row, action){
-  fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
-  .then(r=>r.json())
-  .then(res=>{
-      if(res.status==="success"){
-          loadAttendanceApprovals();
-          loadReports(); loadCounts();
-      } else { alert("Approval failed: "+res.message); }
-  });
-}
-
-/* ---------- REPORTS ---------- */
-let reportDataFull=[], reportPage=1, reportPageSize=10;
-function loadReports(){
-fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
-.then(r=>r.json()).then(attData=>{
-fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
-.then(r=>r.json()).then(leaveData=>{
-  let attMap={};
-  attData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==userName)return;if(userRole==="BPM"&&r[3]!==userBlock)return; attMap[r[1]]=(attMap[r[1]]||0)+1;});
-  reportDataFull=Object.entries(attMap).map(([name,count])=>({name,count})); reportPage=1; renderReportTable(leaveData);
-});
-});
-}
-function renderReportTable(leaveData){
-let start=(reportPage-1)*reportPageSize;
-let end=start+reportPageSize;
-let pageData=reportDataFull.slice(start,end);
-let html="<h5>Attendance Summary</h5><table><tr><th>Name</th><th>Attendance Count</th></tr>";
-pageData.forEach(r=>html+=`<tr><td>${r.name}</td><td>${r.count}</td></tr>`);
-html+=`<tr><td colspan="2"><button onclick="changeReportPage(-1)">Prev</button>
-Page ${reportPage} of ${Math.ceil(reportDataFull.length/reportPageSize)}
-<button onclick="changeReportPage(1)">Next</button></td></tr></table>`;
-html+="<h5>Leave Summary</h5><table><tr><th>Name</th><th>Days</th><th>Status</th></tr>";
-leaveData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==userName)return;if(userRole==="BPM"&&r[2]!==userBlock)return; html+=`<tr><td>${r[1]}</td><td>${r[5]}</td><td>${r[7]}</td></tr>`;});
-html+="</table>"; reportContent.innerHTML=html;
-}
-function changeReportPage(delta){reportPage=Math.max(1,Math.min(Math.ceil(reportDataFull.length/reportPageSize),reportPage+delta)); renderReportTable([]);}
-
-/* ---------- COUNTS ---------- */
-function loadCounts(){
-fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})}).then(r=>r.json()).then(data=>{
-    if(userRole==="Cadre"){
-        let count = data.slice(1).filter(d=>d[1]===userName).length;
-        attCount.innerText=count;
-    } else if(userRole==="BPM" || userRole==="Block"){
-        attCount.innerText=data.length-1;
-    }
-});
-fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.json()).then(data=>{
-    if(userRole==="Cadre"){
-        let count = data.slice(1).filter(d=>d[1]===userName).length;
-        leaveCount.innerText=count;
-    } else if(userRole==="BPM" || userRole==="Block"){
-        leaveCount.innerText=data.length-1;
-    }
-});
-}
-
-    /* ===== LOADER ===== */
-function showLoader(){document.getElementById("loader").style.display="flex";}
-function hideLoader(){document.getElementById("loader").style.display="none";}
-
-/* ===== TOAST ===== */
-function showToast(msg,type="success"){
-let t=document.getElementById("toast");
-t.innerText=msg;
-t.className="toast "+(type==="error"?"error":"");
-t.style.display="block";
-setTimeout(()=>{t.style.display="none"},3000);
-}
-
-/* ===== GEO STATUS ===== */
+/* GEO STATUS */
 navigator.geolocation.getCurrentPosition(
-()=>{document.getElementById("geoStatus").innerHTML="<i class='fa-solid fa-circle-check'></i> GPS Ready";},
-()=>{document.getElementById("geoStatus").innerHTML="<i class='fa-solid fa-triangle-exclamation'></i> GPS Not Enabled";}
+()=>{document.getElementById("geoStatus").innerHTML="GPS Ready";},
+()=>{document.getElementById("geoStatus").innerHTML="GPS Not Enabled";}
 );
 
 </script>
 </body>
 </html>
+";
+let userRole="",userBlock="",userName="";
 
+/* ===== POPUP ===== */
+function showPopup(message){
+  document.getElementById("popupMessage").innerText = message;
+  document.getElementById("popupModal").style.display = "flex";
+}
+function closePopup(){
+  document.getElementById("popupModal").style.display = "none";
+}
 
+/* LOGIN */
+function login(){
+fetch(API,{
+  method:"POST",
+  body:JSON.stringify({action:"login",username:username.value,password:password.value})
+}).then(r=>r.json()).then(res=>{
+  if(res.status==="success"){
+    userRole=res.role; userBlock=res.block; userName=username.value;
+    showDashboard();
+  } else {
+    showPopup(res.message);
+  }
+});
+}
 
+function logout(){ location.reload(); }
+
+/* ATTENDANCE */
+function markAttendance(){
+navigator.geolocation.getCurrentPosition(function(pos){
+fetch(API,{
+method:"POST",
+body:JSON.stringify({action:"markAttendance",name:userName,role:userRole,block:userBlock,
+latitude:pos.coords.latitude,longitude:pos.coords.longitude})
+}).then(r=>r.json()).then(res=>{
+showPopup(res.message || "Attendance Submitted");
+});
+});
+}
+
+/* LEAVE */
+function applyLeave(){
+fetch(API,{
+method:"POST",
+body:JSON.stringify({action:"applyLeave",name:userName,block:userBlock,
+from:fromDate.value,to:toDate.value,reason:reason.value})
+}).then(r=>r.json()).then(res=>{
+showPopup(res.message || "Leave Submitted");
+});
+}
+
+/* GEO STATUS */
+navigator.geolocation.getCurrentPosition(
+()=>{document.getElementById("geoStatus").innerHTML="GPS Ready";},
+()=>{document.getElementById("geoStatus").innerHTML="GPS Not Enabled";}
+);
+
+</script>
+</body>
+</html>
