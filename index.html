@@ -20,6 +20,12 @@ th{background:#1e3a8a;color:white}
 .summary{display:flex;justify-content:space-around;margin-bottom:15px}
 .summary div{background:#f1f5f9;padding:10px;border-radius:8px;text-align:center}
 </style>
+<!-- XLSX for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- html2pdf for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  
 </head>
 <body>
 
@@ -78,8 +84,16 @@ th{background:#1e3a8a;color:white}
 <!-- REPORT -->
 <div id="reportTab" class="hidden">
 <h4>Attendance & Leave Reports</h4>
+
+<!-- Export Buttons for Block -->
+<div id="exportButtons" class="hidden" style="margin-bottom:10px;">
+  <button onclick="exportExcel()">Download Excel</button>
+  <button onclick="exportPDF()">Download PDF</button>
+</div>
+
 <div id="reportContent"></div>
 </div>
+
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbxA0d69Y1467G8ZuTneh-8DIbKCFfAiS-ora2MymF9JFEHbZWCnTxC1cx53PuxDY0wxuw/exec";
@@ -296,6 +310,53 @@ fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.js
     }
 });
 }
+
+
+/* ---------- SHOW EXPORT BUTTONS FOR BLOCK ---------- */
+if(userRole==="Block"){
+  document.getElementById("exportButtons").classList.remove("hidden");
+}
+
+/* ---------- EXPORT TO EXCEL ---------- */
+function exportExcel(){
+  fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
+  .then(r=>r.json()).then(attData=>{
+    fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
+    .then(r=>r.json()).then(leaveData=>{
+      let wb = XLSX.utils.book_new();
+
+      // Attendance Sheet
+      let attSheet = XLSX.utils.json_to_sheet(attData.slice(1).map(r=>{
+        return {Date: r[0], Name:r[1], Role:r[2], Block:r[3], Status:r[7]};
+      }));
+      XLSX.utils.book_append_sheet(wb, attSheet, "Attendance");
+
+      // Leave Sheet
+      let leaveSheet = XLSX.utils.json_to_sheet(leaveData.slice(1).map(r=>{
+        return {Name:r[1], Block:r[2], From:r[3], To:r[4], Days:r[5], Reason:r[6], Status:r[7]};
+      }));
+      XLSX.utils.book_append_sheet(wb, leaveSheet, "Leave");
+
+      XLSX.writeFile(wb, "NRLM_Report.xlsx");
+    });
+  });
+}
+
+/* ---------- EXPORT TO PDF ---------- */
+function exportPDF(){
+  let content = document.getElementById("reportContent").innerHTML;
+  let opt = {
+    margin:       10,
+    filename:     'NRLM_Report.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().from(content).set(opt).save();
+}
+
+  
 </script>
 </body>
 </html>
+
