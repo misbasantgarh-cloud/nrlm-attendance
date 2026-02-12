@@ -20,10 +20,6 @@ th{background:#1e3a8a;color:white}
 .summary{display:flex;justify-content:space-around;margin-bottom:15px}
 .summary div{background:#f1f5f9;padding:10px;border-radius:8px;text-align:center}
 </style>
-<!-- XLSX for Excel export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- html2pdf for PDF export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -82,18 +78,11 @@ th{background:#1e3a8a;color:white}
 <!-- REPORT -->
 <div id="reportTab" class="hidden">
 <h4>Attendance & Leave Reports</h4>
-
-<!-- Export Buttons for Block -->
-<div id="exportButtons" class="hidden" style="margin-bottom:10px;">
-  <button onclick="exportExcel()">Download Excel</button>
-  <button onclick="exportPDF()">Download PDF</button>
-</div>
-
 <div id="reportContent"></div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbx0_111H5tK69EWh0R3Pqqx1BwkmRuo2RccdAni9kK9aWYGx8KIUPWCE6vQHmQ3sihZHA/exec";
+const API="https://script.google.com/macros/s/AKfycbzIx9PevabTx_KvKfWb6kdho6FbiJ0R_Vugsdl1xx5ilHLmkvqb4IkYRLywFNahzefpTQ/exec";
 let userRole="",userBlock="",userName="";
 
 /* ---------- LOGIN ---------- */
@@ -119,13 +108,6 @@ setupTabs();
 loadCounts();
 if(userRole!=="Cadre"){ loadLeaveApprovals(); loadAttendanceApprovals(); }
 loadReports();
-
-/* ---------- SHOW EXPORT BUTTONS FOR BLOCK ---------- */
-if(userRole==="Block"){
-  document.getElementById("exportButtons").classList.remove("hidden");
-} else {
-  document.getElementById("exportButtons").classList.add("hidden");
-}
 }
 
 /* ---------- TABS ---------- */
@@ -161,47 +143,159 @@ if(tab==="approvalAttendance") {approvalAttendanceTab.classList.remove("hidden")
 if(tab==="report") {reportTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(3)").classList.add("activeTab");}
 }
 
-/* ---------- ATTENDANCE & LEAVE ---------- */
-// (All your previous code for markAttendance, applyLeave, approvals remain unchanged)
+/* ---------- ATTENDANCE ---------- */
+function markAttendance(){
+navigator.geolocation.getCurrentPosition(function(pos){
+fetch(API,{
+method:"POST",
+body:JSON.stringify({action:"markAttendance",name:userName,role:userRole,block:userBlock,
+                      latitude:pos.coords.latitude,longitude:pos.coords.longitude})
+}).then(r=>r.json()).then(res=>{
+attMsg.innerText=res.message || "Attendance Submitted";
+loadCounts(); loadReports();
+});
+});
+}
 
-/* ---------- EXPORT TO EXCEL ---------- */
-function exportExcel(){
-  fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
-  .then(r=>r.json()).then(attData=>{
-    fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
-    .then(r=>r.json()).then(leaveData=>{
-      let wb = XLSX.utils.book_new();
+/* ---------- LEAVE ---------- */
+function applyLeave(){
+fetch(API,{
+method:"POST",
+body:JSON.stringify({action:"applyLeave",name:userName,block:userBlock,
+                      from:fromDate.value,to:toDate.value,reason:reason.value})
+}).then(r=>r.json()).then(res=>{
+leaveMsg.innerText=res.message || "Leave Submitted";
+loadCounts(); loadReports();
+});
+}
 
-      // Attendance Sheet - filter by Block
-      let attSheet = XLSX.utils.json_to_sheet(attData.slice(1).filter(r=>r[3]===userBlock).map(r=>{
-        return {Date: r[0], Name:r[1], Role:r[2], Block:r[3], Status:r[7]};
-      }));
-      XLSX.utils.book_append_sheet(wb, attSheet, "Attendance");
+/* ---------- LEAVE APPROVALS ---------- */
+let leaveApprovalDataFull=[], leaveApprovalPage=1, leaveApprovalPageSize=10;
+function loadLeaveApprovals(){
+  fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
+  .then(r=>r.json()).then(data=>{
+    leaveApprovalDataFull=data.slice(1); leaveApprovalPage=1; renderLeaveApprovalTable();
+  });
+}
+function renderLeaveApprovalTable(){
+  let start=(leaveApprovalPage-1)*leaveApprovalPageSize;
+  let end=start+leaveApprovalPageSize;
+  let pageData=leaveApprovalDataFull.slice(start,end);
+  let html="<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
+  pageData.forEach((row,i)=>{
+    const sheetRow = i + 2 + (leaveApprovalPage-1)*leaveApprovalPageSize; // Correct row for Sheet
+    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[2]===userBlock)
+      html+=`<tr><td>${row[1]}</td><td>${new Date(row[3]).toLocaleDateString()}</td>
+      <td>${new Date(row[4]).toLocaleDateString()}</td><td>${row[5]}</td><td>${row[6]}</td>
+      <td>${row[7]}</td><td><button onclick="approveLeave(${sheetRow},'approveLeaveBPM')">Approve</button></td></tr>`;
+    if(userRole==="Block" && row[7]==="Pending_Block")
+      html+=`<tr><td>${row[1]}</td><td>${new Date(row[3]).toLocaleDateString()}</td>
+      <td>${new Date(row[4]).toLocaleDateString()}</td><td>${row[5]}</td><td>${row[6]}</td>
+      <td>${row[7]}</td><td><button onclick="approveLeave(${sheetRow},'approveLeaveBlock')">Final Approve</button></td></tr>`;
+  });
+  html+=`<tr><td colspan="7"><button onclick="changeLeaveApprovalPage(-1)">Prev</button>
+  Page ${leaveApprovalPage} of ${Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize)}
+  <button onclick="changeLeaveApprovalPage(1)">Next</button></td></tr>`;
+  approvalLeaveTable.innerHTML=html;
+}
+function changeLeaveApprovalPage(delta){leaveApprovalPage=Math.max(1,Math.min(Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize),leaveApprovalPage+delta)); renderLeaveApprovalTable();}
 
-      // Leave Sheet - filter by Block
-      let leaveSheet = XLSX.utils.json_to_sheet(leaveData.slice(1).filter(r=>r[2]===userBlock).map(r=>{
-        return {Name:r[1], Block:r[2], From:r[3], To:r[4], Days:r[5], Reason:r[6], Status:r[7]};
-      }));
-      XLSX.utils.book_append_sheet(wb, leaveSheet, "Leave");
-
-      XLSX.writeFile(wb, `NRLM_Report_${userBlock}.xlsx`);
-    });
+// Updated Leave Approval with Sheet update
+function approveLeave(row, action){
+  fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
+  .then(r=>r.json())
+  .then(res=>{
+      if(res.status==="success"){
+          loadLeaveApprovals();
+          loadReports(); loadCounts();
+      } else { alert("Approval failed: "+res.message); }
   });
 }
 
-/* ---------- EXPORT TO PDF ---------- */
-function exportPDF(){
-  let content = document.getElementById("reportContent").innerHTML;
-  let opt = {
-    margin:       10,
-    filename:     `NRLM_Report_${userBlock}.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-  html2pdf().from(content).set(opt).save();
+/* ---------- ATTENDANCE APPROVAL ---------- */
+let attApprovalDataFull=[], attApprovalPage=1, attApprovalPageSize=10;
+function loadAttendanceApprovals(){
+  fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
+  .then(r=>r.json()).then(data=>{attApprovalDataFull=data.slice(1); attApprovalPage=1; renderAttendanceApprovalTable();});
+}
+function renderAttendanceApprovalTable(){
+  let start=(attApprovalPage-1)*attApprovalPageSize;
+  let end=start+attApprovalPageSize;
+  let pageData=attApprovalDataFull.slice(start,end);
+  let html="<tr><th>Name</th><th>Date</th><th>Block</th><th>Status</th><th>Action</th></tr>";
+  pageData.forEach((row,i)=>{
+    const sheetRow = i + 2 + (attApprovalPage-1)*attApprovalPageSize; // Correct row for Sheet
+    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[3]===userBlock)
+      html+=`<tr><td>${row[1]}</td><td>${new Date(row[0]).toLocaleDateString()}</td><td>${row[3]}</td>
+      <td>${row[7]}</td><td><button onclick="approveAttendance(${sheetRow},'approveAttendanceBPM')">Approve</button></td></tr>`;
+    if(userRole==="Block" && row[7]==="Pending_Block")
+      html+=`<tr><td>${row[1]}</td><td>${new Date(row[0]).toLocaleDateString()}</td><td>${row[3]}</td>
+      <td>${row[7]}</td><td><button onclick="approveAttendance(${sheetRow},'approveAttendanceBlock')">Final Approve</button></td></tr>`;
+  });
+  html+=`<tr><td colspan="5"><button onclick="changeAttendanceApprovalPage(-1)">Prev</button>
+  Page ${attApprovalPage} of ${Math.ceil(attApprovalDataFull.length/attApprovalPageSize)}
+  <button onclick="changeAttendanceApprovalPage(1)">Next</button></td></tr>`;
+  approvalAttendanceTable.innerHTML=html;
+}
+function changeAttendanceApprovalPage(delta){attApprovalPage=Math.max(1,Math.min(Math.ceil(attApprovalDataFull.length/attApprovalPageSize),attApprovalPage+delta)); renderAttendanceApprovalTable();}
+function approveAttendance(row, action){
+  fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
+  .then(r=>r.json())
+  .then(res=>{
+      if(res.status==="success"){
+          loadAttendanceApprovals();
+          loadReports(); loadCounts();
+      } else { alert("Approval failed: "+res.message); }
+  });
 }
 
+/* ---------- REPORTS ---------- */
+let reportDataFull=[], reportPage=1, reportPageSize=10;
+function loadReports(){
+fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
+.then(r=>r.json()).then(attData=>{
+fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
+.then(r=>r.json()).then(leaveData=>{
+  let attMap={};
+  attData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==userName)return;if(userRole==="BPM"&&r[3]!==userBlock)return; attMap[r[1]]=(attMap[r[1]]||0)+1;});
+  reportDataFull=Object.entries(attMap).map(([name,count])=>({name,count})); reportPage=1; renderReportTable(leaveData);
+});
+});
+}
+function renderReportTable(leaveData){
+let start=(reportPage-1)*reportPageSize;
+let end=start+reportPageSize;
+let pageData=reportDataFull.slice(start,end);
+let html="<h5>Attendance Summary</h5><table><tr><th>Name</th><th>Attendance Count</th></tr>";
+pageData.forEach(r=>html+=`<tr><td>${r.name}</td><td>${r.count}</td></tr>`);
+html+=`<tr><td colspan="2"><button onclick="changeReportPage(-1)">Prev</button>
+Page ${reportPage} of ${Math.ceil(reportDataFull.length/reportPageSize)}
+<button onclick="changeReportPage(1)">Next</button></td></tr></table>`;
+html+="<h5>Leave Summary</h5><table><tr><th>Name</th><th>Days</th><th>Status</th></tr>";
+leaveData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==userName)return;if(userRole==="BPM"&&r[2]!==userBlock)return; html+=`<tr><td>${r[1]}</td><td>${r[5]}</td><td>${r[7]}</td></tr>`;});
+html+="</table>"; reportContent.innerHTML=html;
+}
+function changeReportPage(delta){reportPage=Math.max(1,Math.min(Math.ceil(reportDataFull.length/reportPageSize),reportPage+delta)); renderReportTable([]);}
+
+/* ---------- COUNTS ---------- */
+function loadCounts(){
+fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})}).then(r=>r.json()).then(data=>{
+    if(userRole==="Cadre"){
+        let count = data.slice(1).filter(d=>d[1]===userName).length;
+        attCount.innerText=count;
+    } else if(userRole==="BPM" || userRole==="Block"){
+        attCount.innerText=data.length-1;
+    }
+});
+fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.json()).then(data=>{
+    if(userRole==="Cadre"){
+        let count = data.slice(1).filter(d=>d[1]===userName).length;
+        leaveCount.innerText=count;
+    } else if(userRole==="BPM" || userRole==="Block"){
+        leaveCount.innerText=data.length-1;
+    }
+});
+}
 </script>
 </body>
 </html>
