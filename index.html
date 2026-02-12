@@ -64,9 +64,14 @@ th{background:#1e3a8a;color:white}
 <p id="leaveMsg"></p>
 </div>
 
-<div id="approvalTab" class="hidden">
+<div id="approvalLeaveTab" class="hidden">
 <h4>Pending Leave Approvals</h4>
-<table id="approvalTable"></table>
+<table id="approvalLeaveTable"></table>
+</div>
+
+<div id="approvalAttendanceTab" class="hidden">
+<h4>Pending Attendance Approvals</h4>
+<table id="approvalAttendanceTable"></table>
 </div>
 
 <div id="reportTab" class="hidden">
@@ -75,7 +80,7 @@ th{background:#1e3a8a;color:white}
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbw0Deh2mWhCq7_wVT50dekV6NppLXaoEkXVxhhS9uo-08melCjfXWLr4K5AL6Jde-TZCw/exec";
+const API="https://script.google.com/macros/s/AKfycby1CnSQrXoIva_LKEQ_VrP-0YCmpx_tMTXNOWMUEWOtSDkT6k_fwXUUKpdMfuaG4lnKVA/exec";
 
 let userRole="",userBlock="",userName="";
 
@@ -106,7 +111,7 @@ welcome.innerText=`Welcome ${userRole} (${userBlock})`;
 
 setupTabs();
 loadCounts();
-if(userRole!=="Cadre") loadApprovals();
+if(userRole!=="Cadre") { loadLeaveApprovals(); loadAttendanceApprovals(); }
 loadReports();
 }
 
@@ -122,28 +127,32 @@ tabDiv.innerHTML=`<button onclick="showTab('attendance')" class="activeTab">Atte
 showTab('attendance');
 }
 if(userRole==="BPM"){
-tabDiv.innerHTML=`<button onclick="showTab('approval')" class="activeTab">Leave Approvals</button>
+tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
+                  <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
                   <button onclick="showTab('report')">Block Reports</button>`;
-showTab('approval');
+showTab('approvalLeave');
 }
 if(userRole==="Block"){
-tabDiv.innerHTML=`<button onclick="showTab('approval')" class="activeTab">Leave Approvals</button>
+tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
+                  <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
                   <button onclick="showTab('report')">Full Block Reports</button>`;
-showTab('approval');
+showTab('approvalLeave');
 }
 }
 
 function showTab(tab){
 attendanceTab.classList.add("hidden");
 leaveTab.classList.add("hidden");
-approvalTab.classList.add("hidden");
+approvalLeaveTab.classList.add("hidden");
+approvalAttendanceTab.classList.add("hidden");
 reportTab.classList.add("hidden");
 
 Array.from(document.querySelectorAll(".tabs button")).forEach(b=>b.classList.remove("activeTab"));
 
 if(tab==="attendance") {attendanceTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
 if(tab==="leave") {leaveTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(2)").classList.add("activeTab");}
-if(tab==="approval") {approvalTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
+if(tab==="approvalLeave") {approvalLeaveTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(1)").classList.add("activeTab");}
+if(tab==="approvalAttendance") {approvalAttendanceTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(2)").classList.add("activeTab");}
 if(tab==="report") {reportTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(3)").classList.add("activeTab");}
 }
 
@@ -175,57 +184,108 @@ loadReports();
 });
 }
 
-/* ---------- APPROVALS WITH PAGINATION ---------- */
-let approvalDataFull = [];
-let approvalPage = 1;
-const approvalPageSize = 10;
+/* ---------- LEAVE APPROVALS WITH PAGINATION ---------- */
+let leaveApprovalDataFull = [];
+let leaveApprovalPage = 1;
+const leaveApprovalPageSize = 10;
 
-function loadApprovals(){
+function loadLeaveApprovals(){
   fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
   .then(r=>r.json()).then(data=>{
-    approvalDataFull = data.slice(1);
-    approvalPage = 1;
-    renderApprovalTable();
+    leaveApprovalDataFull = data.slice(1);
+    leaveApprovalPage = 1;
+    renderLeaveApprovalTable();
   });
 }
 
-function renderApprovalTable(){
-  let start = (approvalPage-1)*approvalPageSize;
-  let end = start + approvalPageSize;
-  let pageData = approvalDataFull.slice(start,end);
+function renderLeaveApprovalTable(){
+  let start = (leaveApprovalPage-1)*leaveApprovalPageSize;
+  let end = start + leaveApprovalPageSize;
+  let pageData = leaveApprovalDataFull.slice(start,end);
 
   let html="<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
   pageData.forEach((row,i)=>{
     if(userRole==="BPM" && row[7]==="Pending_BPM" && row[2]===userBlock)
       html+=`<tr><td>${row[1]}</td><td>${formatDate(row[3])}</td><td>${formatDate(row[4])}</td>
       <td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td>
-      <td><button onclick="approveLeave(${i+1+(approvalPage-1)*approvalPageSize},'approveLeaveBPM')">Approve</button></td></tr>`;
+      <td><button onclick="approveLeave(${i+1+(leaveApprovalPage-1)*leaveApprovalPageSize},'approveLeaveBPM')">Approve</button></td></tr>`;
     if(userRole==="Block" && row[7]==="Pending_Block")
       html+=`<tr><td>${row[1]}</td><td>${formatDate(row[3])}</td><td>${formatDate(row[4])}</td>
       <td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td>
-      <td><button onclick="approveLeave(${i+1+(approvalPage-1)*approvalPageSize},'approveLeaveBlock')">Final Approve</button></td></tr>`;
+      <td><button onclick="approveLeave(${i+1+(leaveApprovalPage-1)*leaveApprovalPageSize},'approveLeaveBlock')">Final Approve</button></td></tr>`;
   });
 
   html += `<tr><td colspan="7">
-    <button onclick="changeApprovalPage(-1)">Prev</button>
-    Page ${approvalPage} of ${Math.ceil(approvalDataFull.length/approvalPageSize)}
-    <button onclick="changeApprovalPage(1)">Next</button>
+    <button onclick="changeLeaveApprovalPage(-1)">Prev</button>
+    Page ${leaveApprovalPage} of ${Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize)}
+    <button onclick="changeLeaveApprovalPage(1)">Next</button>
   </td></tr>`;
 
-  approvalTable.innerHTML = html;
+  approvalLeaveTable.innerHTML = html;
 }
 
-function changeApprovalPage(delta){
-  const totalPages = Math.ceil(approvalDataFull.length/approvalPageSize);
-  approvalPage += delta;
-  if(approvalPage<1) approvalPage=1;
-  if(approvalPage>totalPages) approvalPage=totalPages;
-  renderApprovalTable();
+function changeLeaveApprovalPage(delta){
+  const totalPages = Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize);
+  leaveApprovalPage += delta;
+  if(leaveApprovalPage<1) leaveApprovalPage=1;
+  if(leaveApprovalPage>totalPages) leaveApprovalPage=totalPages;
+  renderLeaveApprovalTable();
 }
 
 function approveLeave(row,action){
 fetch(API,{method:"POST",body:JSON.stringify({action:action,row:row})})
-.then(()=>{loadApprovals(); loadReports();});
+.then(()=>{loadLeaveApprovals(); loadReports();});
+}
+
+/* ---------- ATTENDANCE APPROVALS WITH PAGINATION ---------- */
+let attApprovalDataFull = [];
+let attApprovalPage = 1;
+const attApprovalPageSize = 10;
+
+function loadAttendanceApprovals(){
+  fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
+  .then(r=>r.json()).then(data=>{
+    attApprovalDataFull = data.slice(1);
+    attApprovalPage = 1;
+    renderAttendanceApprovalTable();
+  });
+}
+
+function renderAttendanceApprovalTable(){
+  let start = (attApprovalPage-1)*attApprovalPageSize;
+  let end = start + attApprovalPageSize;
+  let pageData = attApprovalDataFull.slice(start,end);
+
+  let html="<tr><th>Name</th><th>Date</th><th>Block</th><th>Status</th><th>Action</th></tr>";
+  pageData.forEach((row,i)=>{
+    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[3]===userBlock)
+      html+=`<tr><td>${row[1]}</td><td>${formatDate(row[0])}</td><td>${row[3]}</td><td>${row[7]}</td>
+      <td><button onclick="approveAttendance(${i+1+(attApprovalPage-1)*attApprovalPageSize},'approveAttendanceBPM')">Approve</button></td></tr>`;
+    if(userRole==="Block" && row[7]==="Pending_Block")
+      html+=`<tr><td>${row[1]}</td><td>${formatDate(row[0])}</td><td>${row[3]}</td><td>${row[7]}</td>
+      <td><button onclick="approveAttendance(${i+1+(attApprovalPage-1)*attApprovalPageSize},'approveAttendanceBlock')">Final Approve</button></td></tr>`;
+  });
+
+  html += `<tr><td colspan="5">
+    <button onclick="changeAttendanceApprovalPage(-1)">Prev</button>
+    Page ${attApprovalPage} of ${Math.ceil(attApprovalDataFull.length/attApprovalPageSize)}
+    <button onclick="changeAttendanceApprovalPage(1)">Next</button>
+  </td></tr>`;
+
+  approvalAttendanceTable.innerHTML = html;
+}
+
+function changeAttendanceApprovalPage(delta){
+  const totalPages = Math.ceil(attApprovalDataFull.length/attApprovalPageSize);
+  attApprovalPage += delta;
+  if(attApprovalPage<1) attApprovalPage=1;
+  if(attApprovalPage>totalPages) attApprovalPage=totalPages;
+  renderAttendanceApprovalTable();
+}
+
+function approveAttendance(row,action){
+fetch(API,{method:"POST",body:JSON.stringify({action:action,row:row})})
+.then(()=>{loadAttendanceApprovals(); loadReports();});
 }
 
 /* ---------- REPORTS WITH PAGINATION ---------- */
