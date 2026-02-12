@@ -82,7 +82,7 @@ th{background:#1e3a8a;color:white}
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbwafq0LWclrWa4FgjGVtN_u_g1UskZGAxhuvq0QpzA1LUT8buM9k7n4d-uYiXjTtEk6Vg/exec";
+const API="https://script.google.com/macros/s/AKfycbwDVw_-99gmbq8Cx4IInG4PGT7IufXWa2j-yhfANFum3Qd2kh_RA8ROFL48kGPmr-u8Yw/exec";
 let userRole="",userBlock="",userName="";
 
 /* ---------- LOGIN ---------- */
@@ -203,7 +203,29 @@ function renderLeaveApprovalTable(){
   approvalLeaveTable.innerHTML=html;
 }
 function changeLeaveApprovalPage(delta){leaveApprovalPage=Math.max(1,Math.min(Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize),leaveApprovalPage+delta)); renderLeaveApprovalTable();}
-function approveLeave(row,action){fetch(API,{method:"POST",body:JSON.stringify({action:action,row:row})}).then(()=>{loadLeaveApprovals(); loadReports();});}
+
+// Updated Leave Approval with front-end status update
+function approveLeave(row, action){
+  fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
+  .then(r=>r.json())
+  .then(res=>{
+      if(res.status==="success"){
+          let table = document.getElementById("approvalLeaveTable");
+          let tr = table.rows[row];
+          if(userRole==="BPM"){
+              tr.cells[5].innerText = "Pending_Block";
+              tr.cells[6].innerHTML = `<button disabled>Approved by BPM</button>`;
+          } else if(userRole==="Block"){
+              tr.cells[5].innerText = "Approved";
+              tr.cells[6].innerHTML = `<button disabled>Final Approved</button>`;
+          }
+          loadReports();
+          loadCounts();
+      } else {
+          alert("Approval failed: "+res.message);
+      }
+  });
+}
 
 /* ---------- ATTENDANCE APPROVALS ---------- */
 let attApprovalDataFull=[], attApprovalPage=1, attApprovalPageSize=10;
@@ -230,7 +252,29 @@ function renderAttendanceApprovalTable(){
   approvalAttendanceTable.innerHTML=html;
 }
 function changeAttendanceApprovalPage(delta){attApprovalPage=Math.max(1,Math.min(Math.ceil(attApprovalDataFull.length/attApprovalPageSize),attApprovalPage+delta)); renderAttendanceApprovalTable();}
-function approveAttendance(row,action){fetch(API,{method:"POST",body:JSON.stringify({action:action,row:row})}).then(()=>{loadAttendanceApprovals(); loadReports();});}
+
+// Updated Attendance Approval with front-end status update
+function approveAttendance(row, action){
+  fetch(API, {method:"POST", body:JSON.stringify({action:action,row:row})})
+  .then(r=>r.json())
+  .then(res=>{
+      if(res.status==="success"){
+          let table = document.getElementById("approvalAttendanceTable");
+          let tr = table.rows[row];
+          if(userRole==="BPM"){
+              tr.cells[3].innerText = "Pending_Block";
+              tr.cells[4].innerHTML = `<button disabled>Approved by BPM</button>`;
+          } else if(userRole==="Block"){
+              tr.cells[3].innerText = "Approved";
+              tr.cells[4].innerHTML = `<button disabled>Final Approved</button>`;
+          }
+          loadReports();
+          loadCounts();
+      } else {
+          alert("Approval failed: "+res.message);
+      }
+  });
+}
 
 /* ---------- REPORTS ---------- */
 let reportDataFull=[], reportPage=1, reportPageSize=10;
@@ -262,29 +306,22 @@ function changeReportPage(delta){reportPage=Math.max(1,Math.min(Math.ceil(report
 
 /* ---------- COUNTS ---------- */
 function loadCounts(){
-  // Attendance Count
-  fetch(API, { method: "POST", body: JSON.stringify({ action: "getAttendance" }) })
-  .then(r => r.json())
-  .then(data => {
-    let count = 0;
-    data.slice(1).forEach(r => {
-      if(userRole === "Cadre" && r[1] === userName) count++;       // Cadre sees own
-      else if(userRole !== "Cadre" && r[3] === userBlock) count++; // BPM/Block sees block
-    });
-    attCount.innerText = count;
-  });
-
-  // Leave Count
-  fetch(API, { method: "POST", body: JSON.stringify({ action: "getLeave" }) })
-  .then(r => r.json())
-  .then(data => {
-    let count = 0;
-    data.slice(1).forEach(r => {
-      if(userRole === "Cadre" && r[1] === userName) count++;       // Cadre sees own
-      else if(userRole !== "Cadre" && r[2] === userBlock) count++; // BPM/Block sees block
-    });
-    leaveCount.innerText = count;
-  });
+fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})}).then(r=>r.json()).then(data=>{
+    if(userRole==="Cadre"){
+        let count = data.slice(1).filter(d=>d[1]===userName).length;
+        attCount.innerText=count;
+    } else if(userRole==="BPM" || userRole==="Block"){
+        attCount.innerText=data.length-1;
+    }
+});
+fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.json()).then(data=>{
+    if(userRole==="Cadre"){
+        let count = data.slice(1).filter(d=>d[1]===userName).length;
+        leaveCount.innerText=count;
+    } else if(userRole==="BPM" || userRole==="Block"){
+        leaveCount.innerText=data.length-1;
+    }
+});
 }
 </script>
 </body>
