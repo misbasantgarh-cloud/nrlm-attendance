@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NRLM Geo Attendance & MIS</title>
 
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
 <style>
 *{box-sizing:border-box}
 body{
-    font-family: 'Segoe UI', sans-serif;
     margin:0;
+    font-family:'Segoe UI',sans-serif;
     background:linear-gradient(to right,#eef2ff,#f8fafc);
 }
 
@@ -21,7 +23,6 @@ header{
     text-align:center;
     font-size:22px;
     font-weight:600;
-    letter-spacing:1px;
 }
 
 /* CARD */
@@ -33,24 +34,18 @@ header{
     max-width:1100px;
     border-radius:15px;
     box-shadow:0 10px 25px rgba(0,0,0,0.08);
-    transition:0.3s;
 }
 
-h3,h4{
-    margin-top:0;
-    color:#1e3a8a;
-}
+h3,h4{margin-top:0;color:#1e3a8a}
 
-/* INPUTS */
-input,select{
+/* INPUT */
+input{
     padding:12px;
     margin:8px 0;
     width:100%;
     max-width:400px;
     border-radius:8px;
     border:1px solid #cbd5e1;
-    font-size:14px;
-    transition:0.2s;
 }
 input:focus{
     outline:none;
@@ -58,7 +53,7 @@ input:focus{
     box-shadow:0 0 0 2px rgba(37,99,235,0.2);
 }
 
-/* BUTTONS */
+/* BUTTON */
 button{
     padding:10px 18px;
     margin:8px 5px 8px 0;
@@ -70,18 +65,11 @@ button{
     font-weight:500;
     transition:0.3s;
 }
-button:hover{
-    background:#1e40af;
-    transform:translateY(-1px);
-}
-.logout{
-    background:#dc2626;
-}
-.logout:hover{
-    background:#991b1b;
-}
+button:hover{background:#1e40af;transform:translateY(-1px)}
+.logout{background:#dc2626}
+.logout:hover{background:#991b1b}
 
-/* SUMMARY CARDS */
+/* SUMMARY */
 .summary{
     display:flex;
     flex-wrap:wrap;
@@ -91,36 +79,24 @@ button:hover{
 .summary div{
     flex:1;
     min-width:150px;
-    background:linear-gradient(135deg,#e0f2fe,#f1f5f9);
     padding:15px;
     border-radius:12px;
+    background:linear-gradient(135deg,#e0f2fe,#f1f5f9);
     text-align:center;
     font-weight:600;
     color:#1e3a8a;
-    box-shadow:0 5px 12px rgba(0,0,0,0.05);
 }
 
 /* TABS */
-.tabs{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin-bottom:20px;
-}
-.tabs button{
-    background:#e2e8f0;
-    color:#1e293b;
-}
-.tabs button.activeTab{
-    background:#2563eb;
-    color:white;
-}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.tabs button{background:#e2e8f0;color:#1e293b}
+.tabs button.activeTab{background:#2563eb;color:white}
 
 /* TABLE */
+.table-container{overflow-x:auto}
 table{
     width:100%;
     border-collapse:collapse;
-    margin-top:15px;
     min-width:600px;
 }
 th,td{
@@ -129,89 +105,136 @@ th,td{
     text-align:center;
     font-size:14px;
 }
-th{
-    background:#2563eb;
-    color:white;
-}
-.table-container{
-    overflow-x:auto;
-}
+th{background:#2563eb;color:white}
 
-/* HIDDEN */
-.hidden{display:none}
+/* APPROVE BUTTONS */
+.approveBtn{background:#16a34a}
+.approveBtn:hover{background:#15803d}
+.rejectBtn{background:#dc2626}
+.rejectBtn:hover{background:#991b1b}
+
+/* LOADER */
+.loader{
+    position:fixed;
+    top:0;left:0;
+    width:100%;
+    height:100%;
+    background:rgba(255,255,255,0.7);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+    display:none;
+}
+.spinner{
+    border:6px solid #e5e7eb;
+    border-top:6px solid #2563eb;
+    border-radius:50%;
+    width:50px;
+    height:50px;
+    animation:spin 1s linear infinite;
+}
+@keyframes spin{100%{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    background:#16a34a;
+    color:white;
+    padding:12px 20px;
+    border-radius:8px;
+    display:none;
+    z-index:9999;
+}
+.toast.error{background:#dc2626}
+
+/* GEO STATUS */
+.geo-status{
+    margin-top:10px;
+    font-size:14px;
+    color:#16a34a;
+}
 
 /* MOBILE */
 @media(max-width:768px){
-    .card{padding:18px}
-    header{font-size:18px}
-    button{width:100%; margin:8px 0}
+    button{width:100%;margin:8px 0}
     .tabs button{flex:1}
 }
+.hidden{display:none}
 </style>
 </head>
 <body>
 
 <header>
-NRLM Geo Attendance & MIS Portal
+<i class="fa-solid fa-location-dot"></i> NRLM Geo Attendance & MIS Portal
 </header>
+
+<div class="loader" id="loader">
+<div class="spinner"></div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <!-- LOGIN -->
 <div class="card" id="loginCard">
-<h3>Login</h3>
+<h3><i class="fa-solid fa-user"></i> Login</h3>
 <input type="text" id="username" placeholder="Username">
 <input type="password" id="password" placeholder="Password">
-<button onclick="login()">Login</button>
+<button onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
 <p id="loginMsg" style="color:red;"></p>
 </div>
 
 <!-- DASHBOARD -->
 <div class="card hidden" id="dashboard">
 <h3 id="welcome"></h3>
-<button class="logout" onclick="logout()">Logout</button>
+<button class="logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
 
 <div class="summary">
-<div>Total Attendance<br><span id="attCount">0</span></div>
-<div>Total Leave<br><span id="leaveCount">0</span></div>
+<div><i class="fa-solid fa-calendar-check"></i><br>Total Attendance<br><span id="attCount">0</span></div>
+<div><i class="fa-solid fa-plane-departure"></i><br>Total Leave<br><span id="leaveCount">0</span></div>
 </div>
 
 <div class="tabs" id="tabs"></div>
 
 <div id="attendanceTab" class="hidden">
-<h4>Mark Attendance</h4>
-<button onclick="markAttendance()">Mark Attendance</button>
+<h4><i class="fa-solid fa-location-crosshairs"></i> Mark Attendance</h4>
+<button onclick="markAttendance()"><i class="fa-solid fa-fingerprint"></i> Mark Attendance</button>
+<div class="geo-status" id="geoStatus"></div>
 <p id="attMsg"></p>
 </div>
 
 <div id="leaveTab" class="hidden">
-<h4>Apply Leave</h4>
+<h4><i class="fa-solid fa-file-circle-plus"></i> Apply Leave</h4>
 <input type="date" id="fromDate">
 <input type="date" id="toDate">
 <input type="text" id="reason" placeholder="Reason">
-<button onclick="applyLeave()">Submit Leave</button>
+<button onclick="applyLeave()"><i class="fa-solid fa-paper-plane"></i> Submit Leave</button>
 <p id="leaveMsg"></p>
 </div>
 
 <div id="approvalLeaveTab" class="hidden">
-<h4>Pending Leave Approvals</h4>
+<h4><i class="fa-solid fa-user-check"></i> Pending Leave Approvals</h4>
 <div class="table-container">
 <table id="approvalLeaveTable"></table>
 </div>
 </div>
 
 <div id="approvalAttendanceTab" class="hidden">
-<h4>Pending Attendance Approvals</h4>
+<h4><i class="fa-solid fa-clipboard-check"></i> Pending Attendance Approvals</h4>
 <div class="table-container">
 <table id="approvalAttendanceTable"></table>
 </div>
 </div>
 
 <div id="reportTab" class="hidden">
-<h4>Attendance & Leave Reports</h4>
+<h4><i class="fa-solid fa-chart-column"></i> Attendance & Leave Reports</h4>
 <div id="reportContent"></div>
 </div>
 
-
 <script>
+
 const API="https://script.google.com/macros/s/AKfycbzIx9PevabTx_KvKfWb6kdho6FbiJ0R_Vugsdl1xx5ilHLmkvqb4IkYRLywFNahzefpTQ/exec";
 let userRole="",userBlock="",userName="";
 
@@ -426,7 +449,28 @@ fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.js
     }
 });
 }
+
+    /* ===== LOADER ===== */
+function showLoader(){document.getElementById("loader").style.display="flex";}
+function hideLoader(){document.getElementById("loader").style.display="none";}
+
+/* ===== TOAST ===== */
+function showToast(msg,type="success"){
+let t=document.getElementById("toast");
+t.innerText=msg;
+t.className="toast "+(type==="error"?"error":"");
+t.style.display="block";
+setTimeout(()=>{t.style.display="none"},3000);
+}
+
+/* ===== GEO STATUS ===== */
+navigator.geolocation.getCurrentPosition(
+()=>{document.getElementById("geoStatus").innerHTML="<i class='fa-solid fa-circle-check'></i> GPS Ready";},
+()=>{document.getElementById("geoStatus").innerHTML="<i class='fa-solid fa-triangle-exclamation'></i> GPS Not Enabled";}
+);
+
 </script>
 </body>
 </html>
+
 
