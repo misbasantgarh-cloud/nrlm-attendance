@@ -298,17 +298,58 @@ if(tab==="report") {reportTab.classList.remove("hidden"); document.querySelector
 
 /* ---------- ATTENDANCE ---------- */
 function markAttendance(){
-navigator.geolocation.getCurrentPosition(function(pos){
-fetch(API,{
-method:"POST",
-body:JSON.stringify({action:"markAttendance",name:userName,role:userRole,block:userBlock,
-                      latitude:pos.coords.latitude,longitude:pos.coords.longitude})
-}).then(r=>r.json()).then(res=>{
-attMsg.innerText=res.message || "Attendance Submitted";
-loadCounts(); loadReports();
-});
-});
+
+  if (!navigator.geolocation) {
+    showPopup("Geolocation is not supported by your browser.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(pos){
+      // GPS is ON
+      fetch(API,{
+        method:"POST",
+        body:JSON.stringify({
+          action:"markAttendance",
+          name:userName,
+          role:userRole,
+          block:userBlock,
+          latitude:pos.coords.latitude,
+          longitude:pos.coords.longitude
+        })
+      })
+      .then(r=>r.json())
+      .then(res=>{
+        showPopup(res.message || "Attendance Submitted Successfully");
+      });
+    },
+
+    function(error){
+      // GPS is OFF or denied
+      if(error.code === 1){
+        showPopup("Location access denied. Please enable GPS permission.");
+      }
+      else if(error.code === 2){
+        showPopup("Location unavailable. Please turn ON GPS.");
+      }
+      else if(error.code === 3){
+        showPopup("Location request timed out. Try again.");
+      }
+      else{
+        showPopup("Please enable GPS to mark attendance.");
+      }
+    },
+
+    {
+      enableHighAccuracy:true,
+      timeout:10000,
+      maximumAge:0
+    }
+
+  );
 }
+
 
 /* ---------- LEAVE ---------- */
 function applyLeave(){
@@ -472,6 +513,7 @@ navigator.geolocation.getCurrentPosition(
 </script>
 </body>
 </html>
+
 
 
 
