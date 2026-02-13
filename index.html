@@ -232,7 +232,7 @@ th{background:#2563eb;color:white}
 <h4><i class="fa-solid fa-file-circle-plus"></i> Apply Leave</h4>
 <input type="date" id="fromDate">
 <input type="date" id="toDate">
-<input type="text" id="reason" placeholder="Reason">
+<input type="text" id="reason" placeholder="Reason" required>
 <button onclick="applyLeave()"><i class="fa-solid fa-paper-plane"></i> Submit Leave</button>
 <p id="leaveMsg"></p>
 </div>
@@ -258,7 +258,7 @@ th{background:#2563eb;color:white}
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxFH30SPFfE66EsdczobeGrj489qNy36HRyBgByziHn8J1Jt5C_pjPDp9VG9D-Q_z2nDg/exec";
+const API="https://script.google.com/macros/s/AKfycby4YWyGNRxAzobZvZW9WVhJmFi2JBzt7iPoF4nqxyb7Ku08mjy1Cno1VWK-6OkaixJ38w/exec";
 let userRole="",userBlock="",userName="";
 
 /* ---------- LOGIN ---------- */
@@ -327,7 +327,7 @@ method:"POST",
 body:JSON.stringify({action:"markAttendance",name:userName,role:userRole,block:userBlock,
                       latitude:pos.coords.latitude,longitude:pos.coords.longitude})
 }).then(r=>r.json()).then(res=>{
-attMsg.innerText=res.message || "Attendance Submitted";
+attMsg.innerText=res.message || "Today Attendance Submitted at Your Office";
 loadCounts(); loadReports();
 });
 });
@@ -495,6 +495,7 @@ navigator.geolocation.getCurrentPosition(
 </script>
 </body>
 </html>
+
 
 
 
