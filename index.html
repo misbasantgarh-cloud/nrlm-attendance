@@ -189,14 +189,19 @@ th{background:#2563eb;color:white}
 <header>
 <i class="fa-solid fa-location-dot"></i> Dudu-Basantgarh Attendance Portal Live
     </br>
-    <span class="blink-me" style="color: red;">Mark Attendance at Your Offices</span>
+    <span class="blink-me" style="color: red;"> ⚠ Notice</span></br>
 
+<span style="color:#facc15; font-weight:600; text-shadow:0 0 6px rgba(250,204,21,0.6);">
+              ⚠ Mark Your Attendance from Your Designated Office
+</span>
 
 </header>
 
 <div class="loader" id="loader">
-<div class="spinner"></div>
-</div>
+    <div class="spinner"></div>
+    <div style="margin-top:15px;font-size:18px;font-weight:bold;color:#1e3a8a;">
+    </div></div>
+
 
 <div class="toast" id="toast"></div>
 
@@ -258,21 +263,53 @@ th{background:#2563eb;color:white}
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycby4YWyGNRxAzobZvZW9WVhJmFi2JBzt7iPoF4nqxyb7Ku08mjy1Cno1VWK-6OkaixJ38w/exec";
+const API="https://script.google.com/macros/s/AKfycbwWZoP0NBjWeklKTkr3QtBJGfJmG2Z4Ox0IGcm1JZEgeR_5sKwU6ygz8fmWpyGGHtjDQA/exec";
 let userRole="",userBlock="",userName="";
 
 /* ---------- LOGIN ---------- */
 function login(){
+let uname = username.value.trim();
+let pass = password.value.trim();
+
+loginMsg.style.color = "red";
+loginMsg.innerText = "";
+
+/* Validation */
+if(uname === ""){
+    loginMsg.innerText = "Username is required";
+    username.focus();
+    return;
+}
+if(pass === ""){
+    loginMsg.innerText = "Password is required";
+    password.focus();
+    return;
+}
+if(uname.length < 3){
+    loginMsg.innerText = "Username must be at least 3 characters";
+    return;
+}
+if(pass.length < 4){
+    loginMsg.innerText = "Password must be at least 4 characters";
+    return;
+}
+
+/* API Call */
 fetch(API,{
   method:"POST",
-  body:JSON.stringify({action:"login",username:username.value,password:password.value})
+  body:JSON.stringify({action:"login",username:uname,password:pass})
 }).then(r=>r.json()).then(res=>{
   if(res.status==="success"){
-    userRole=res.role; userBlock=res.block; userName=username.value;
+    userRole=res.role;
+    userBlock=res.block;
+    userName=uname;
     showDashboard();
-  } else { loginMsg.innerText=res.message; }
+  } else {
+    loginMsg.innerText=res.message || "Username or Password is Incorrect";
+  }
 });
 }
+
 function logout(){ location.reload(); }
 
 /* ---------- DASHBOARD ---------- */
@@ -335,15 +372,84 @@ loadCounts(); loadReports();
 
 /* ---------- LEAVE ---------- */
 function applyLeave(){
+
+let from = fromDate.value;
+let to = toDate.value;
+let reasonText = reason.value.trim();
+
+leaveMsg.style.color = "red";
+leaveMsg.innerText = "";
+
+/* Validation */
+if(from === ""){
+    leaveMsg.innerText = "Please select From Date";
+    return;
+}
+if(to === ""){
+    leaveMsg.innerText = "Please select To Date";
+    return;
+}
+if(reasonText === ""){
+    leaveMsg.innerText = "Reason is required";
+    return;
+}
+if(reasonText.length < 5){
+    leaveMsg.innerText = "Reason must be at least 5 characters";
+    return;
+}
+
+let fromD = new Date(from);
+let toD = new Date(to);
+let today = new Date();
+today.setHours(0,0,0,0);
+
+if(fromD > toD){
+    leaveMsg.innerText = "From Date cannot be after To Date";
+    return;
+}
+
+if(fromD < today){
+    leaveMsg.innerText = "Leave cannot be applied for past dates";
+    return;
+}
+
+/* Calculate Leave Days */
+let diffTime = toD - fromD;
+let days = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+/* API Call */
 fetch(API,{
 method:"POST",
-body:JSON.stringify({action:"applyLeave",name:userName,block:userBlock,
-                      from:fromDate.value,to:toDate.value,reason:reason.value})
+body:JSON.stringify({
+    action:"applyLeave",
+    name:userName,
+    block:userBlock,
+    from:from,
+    to:to,
+    reason:reasonText,
+    days:days
+})
 }).then(r=>r.json()).then(res=>{
-leaveMsg.innerText=res.message || "Leave Submitted";
-loadCounts(); loadReports();
+
+
+leaveMsg.style.color="green";
+leaveMsg.innerText=res.message || "Leave Submitted Successfully";
+
+/* Clear Fields After Success */
+fromDate.value = "";
+toDate.value = "";
+reason.value = "";
+
+/* Optional: Move focus back to From Date */
+fromDate.focus();
+
+loadCounts();
+loadReports();
+
+
 });
 }
+
 
 /* ---------- LEAVE APPROVALS ---------- */
 let leaveApprovalDataFull=[], leaveApprovalPage=1, leaveApprovalPageSize=10;
@@ -492,15 +598,42 @@ navigator.geolocation.getCurrentPosition(
 ()=>{document.getElementById("geoStatus").innerHTML="<i class='fa-solid fa-triangle-exclamation'></i> GPS Not Enabled";}
 );
 
+/* ===== AUTO LOADER FOR ALL FETCH CALLS ===== */
+const originalFetch = window.fetch;
+window.fetch = function(){
+    showLoader();
+    return originalFetch.apply(this, arguments)
+        .finally(() => hideLoader());
+};
+
 </script>
+
+<style>
+.footer-notice{
+    position:fixed;
+    bottom:0;
+    left:0;
+    width:100%;
+    background:#fff3cd;
+    color:#92400e;
+    padding:12px;
+    text-align:center;
+    font-weight:600;
+    box-shadow:0 -2px 10px rgba(0,0,0,0.08);
+    z-index:999;
+}
+
+body{
+    padding-bottom:60px;
+}
+
+</style>
+
+<div class="footer-notice">
+⚠ All Staff, CLF’s and VO’s are required to mark attendance daily from their respective offices before 11:00 AM. Non-compliance will be treated as absence.
+</div>
+
+
+
 </body>
 </html>
-
-
-
-
-
-
-
-
-
