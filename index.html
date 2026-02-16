@@ -470,26 +470,80 @@ function loadLeaveApprovals(){
   });
 }
 function renderLeaveApprovalTable(){
-  let start=(leaveApprovalPage-1)*leaveApprovalPageSize;
-  let end=start+leaveApprovalPageSize;
-  let pageData=leaveApprovalDataFull.slice(start,end);
-  let html="<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
-  pageData.forEach((row,i)=>{
-    const sheetRow = i + 2 + (leaveApprovalPage-1)*leaveApprovalPageSize; // Correct row for Sheet
-    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[2]===userBlock)
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[3]).toLocaleDateString()}</td>
-      <td>${new Date(row[4]).toLocaleDateString()}</td><td>${row[5]}</td><td>${row[6]}</td>
-      <td>${row[7]}</td><td><button onclick="approveLeave(${sheetRow},'approveLeaveBPM')">Approve</button></td></tr>`;
-    if(userRole==="Block" && row[7]==="Pending_Block")
-      html+=`<tr><td>${row[1]}</td><td>${new Date(row[3]).toLocaleDateString()}</td>
-      <td>${new Date(row[4]).toLocaleDateString()}</td><td>${row[5]}</td><td>${row[6]}</td>
-      <td>${row[7]}</td><td><button onclick="approveLeave(${sheetRow},'approveLeaveBlock')">Final Approve</button></td></tr>`;
+
+  // STEP 1: FILTER FIRST
+  let filteredData = leaveApprovalDataFull.filter(row => {
+
+    if(userRole === "BPM"){
+      return row[7] === "Pending_BPM" &&
+             row[2].trim().toLowerCase() === userBlock.trim().toLowerCase();
+    }
+
+    if(userRole === "Block"){
+      return row[7] === "Pending_Block";
+    }
+
+    return false;
   });
-  html+=`<tr><td colspan="7"><button onclick="changeLeaveApprovalPage(-1)">Prev</button>
-  Page ${leaveApprovalPage} of ${Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize)}
-  <button onclick="changeLeaveApprovalPage(1)">Next</button></td></tr>`;
-  approvalLeaveTable.innerHTML=html;
+
+  // STEP 2: PAGINATE FILTERED DATA
+  let totalPages = Math.ceil(filteredData.length / leaveApprovalPageSize);
+  if(totalPages === 0) totalPages = 1;
+
+  if(leaveApprovalPage > totalPages){
+    leaveApprovalPage = totalPages;
+  }
+
+  let start = (leaveApprovalPage - 1) * leaveApprovalPageSize;
+  let end = start + leaveApprovalPageSize;
+  let pageData = filteredData.slice(start, end);
+
+  // STEP 3: BUILD TABLE
+  let html = "<tr><th>Name</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr>";
+
+  pageData.forEach((row, i) => {
+
+    // Get actual sheet row number correctly
+    const originalIndex = leaveApprovalDataFull.indexOf(row);
+    const sheetRow = originalIndex + 2;
+
+    if(userRole === "BPM"){
+      html += `<tr>
+        <td>${row[1]}</td>
+        <td>${new Date(row[3]).toLocaleDateString()}</td>
+        <td>${new Date(row[4]).toLocaleDateString()}</td>
+        <td>${row[5]}</td>
+        <td>${row[6]}</td>
+        <td>${row[7]}</td>
+        <td><button onclick="approveLeave(${sheetRow},'approveLeaveBPM')">Approve</button></td>
+      </tr>`;
+    }
+
+    if(userRole === "Block"){
+      html += `<tr>
+        <td>${row[1]}</td>
+        <td>${new Date(row[3]).toLocaleDateString()}</td>
+        <td>${new Date(row[4]).toLocaleDateString()}</td>
+        <td>${row[5]}</td>
+        <td>${row[6]}</td>
+        <td>${row[7]}</td>
+        <td><button onclick="approveLeave(${sheetRow},'approveLeaveBlock')">Final Approve</button></td>
+      </tr>`;
+    }
+
+  });
+
+  html += `<tr>
+    <td colspan="7">
+      <button onclick="changeLeaveApprovalPage(-1)">Prev</button>
+      Page ${leaveApprovalPage} of ${totalPages}
+      <button onclick="changeLeaveApprovalPage(1)">Next</button>
+    </td>
+  </tr>`;
+
+  approvalLeaveTable.innerHTML = html;
 }
+
 function changeLeaveApprovalPage(delta){leaveApprovalPage=Math.max(1,Math.min(Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize),leaveApprovalPage+delta)); renderLeaveApprovalTable();}
 
 // Updated Leave Approval with Sheet update
@@ -928,6 +982,7 @@ body{
 
 </body>
 </html>
+
 
 
 
