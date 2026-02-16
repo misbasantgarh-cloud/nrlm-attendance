@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -475,8 +476,8 @@ function renderLeaveApprovalTable(){
   let filteredData = leaveApprovalDataFull.filter(row => {
 
     if(userRole === "BPM"){
-      return row[7] === "Pending_BPM" &&
-             row[2].trim().toLowerCase() === userBlock.trim().toLowerCase();
+      return row[7] === "Pending_BPM";
+
     }
 
     if(userRole === "Block"){
@@ -543,7 +544,6 @@ function renderLeaveApprovalTable(){
 
   approvalLeaveTable.innerHTML = html;
 }
-
 function changeLeaveApprovalPage(delta){leaveApprovalPage=Math.max(1,Math.min(Math.ceil(leaveApprovalDataFull.length/leaveApprovalPageSize),leaveApprovalPage+delta)); renderLeaveApprovalTable();}
 
 // Updated Leave Approval with Sheet update
@@ -571,7 +571,7 @@ function renderAttendanceApprovalTable(){
   let html="<tr><th>Name</th><th>Date</th><th>Block</th><th>Status</th><th>Action</th></tr>";
   pageData.forEach((row,i)=>{
     const sheetRow = i + 2 + (attApprovalPage-1)*attApprovalPageSize; // Correct row for Sheet
-    if(userRole==="BPM" && row[7]==="Pending_BPM" && row[3]===userBlock)
+    if(userRole==="BPM" && row[7]==="Pending_BPM")
       html+=`<tr><td>${row[1]}</td><td>${new Date(row[0]).toLocaleDateString()}</td><td>${row[3]}</td>
       <td>${row[7]}</td><td><button onclick="approveAttendance(${sheetRow},'approveAttendanceBPM')">Approve</button></td></tr>`;
     if(userRole==="Block" && row[7]==="Pending_Block")
@@ -758,7 +758,7 @@ doc.rect(0,0,pageWidth,20,"F");
 doc.setTextColor(255,255,255);
 doc.setFontSize(16);
 doc.setFont(undefined,"bold");
-doc.text("Total CLF's = 4 | Total VO's = 44", pageWidth/2, 12, {align:"center"});
+doc.text("Total CLF's = 4 | Total = VO'S = 44", pageWidth/2, 12, {align:"center"});
 
 doc.setTextColor(0,0,0);
 doc.setFontSize(13);
@@ -982,9 +982,6 @@ body{
 
 </body>
 </html>
-
-
-
 
 
 
