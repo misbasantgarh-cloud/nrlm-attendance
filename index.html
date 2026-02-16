@@ -274,8 +274,9 @@ th{background:#2563eb;color:white}
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbwWZoP0NBjWeklKTkr3QtBJGfJmG2Z4Ox0IGcm1JZEgeR_5sKwU6ygz8fmWpyGGHtjDQA/exec";
-let userRole="",userBlock="",userName="";
+const API="https://script.google.com/macros/s/AKfycbzxsw4qHNhvkZIH0wGSeRDb1Z8v1RRIQwOPHD1Yil9oLiFM6tnmg5YIL8NrhQjcJ_E6ew/exec";
+let userRole="",userBlock="",userName="",employeeName="";
+
 
 /* ---------- LOGIN ---------- */
 function login(){
@@ -311,11 +312,14 @@ fetch(API,{
   body:JSON.stringify({action:"login",username:uname,password:pass})
 }).then(r=>r.json()).then(res=>{
   if(res.status==="success"){
-    userRole=res.role;
-    userBlock=res.block;
-    userName=uname;
+    userRole = res.role;
+    userBlock = res.block;
+    userName = uname;                  // keep username if needed
+    employeeName = res.employeeName;   //  ADD THIS
     showDashboard();
-  } else {
+}
+ 
+else {
     loginMsg.innerText=res.message || "Username or Password is Incorrect";
   }
 });
@@ -327,7 +331,7 @@ function logout(){ location.reload(); }
 function showDashboard(){
 loginCard.classList.add("hidden");
 dashboard.classList.remove("hidden");
-welcome.innerText=`Welcome ${userRole} (${userBlock})`;
+welcome.innerText=`Welcome ${employeeName} (${userRole} - ${userBlock})`;
 setupTabs();
 loadCounts();
 if(userRole!=="Cadre"){ loadLeaveApprovals(); loadAttendanceApprovals(); }
@@ -372,7 +376,7 @@ function markAttendance(){
 navigator.geolocation.getCurrentPosition(function(pos){
 fetch(API,{
 method:"POST",
-body:JSON.stringify({action:"markAttendance",name:userName,role:userRole,block:userBlock,
+body:JSON.stringify({action:"markAttendance",name:employeeName,role:userRole,block:userBlock,
                       latitude:pos.coords.latitude,longitude:pos.coords.longitude})
 }).then(r=>r.json()).then(res=>{
 attMsg.innerText=res.message || "Today Attendance Submitted at Your Office";
@@ -433,7 +437,7 @@ fetch(API,{
 method:"POST",
 body:JSON.stringify({
     action:"applyLeave",
-    name:userName,
+    name:employeeName,
     block:userBlock,
     from:from,
     to:to,
@@ -597,14 +601,19 @@ function approveAttendance(row, action){
 
 /* ---------- REPORTS ---------- */
 let reportDataFull=[], reportPage=1, reportPageSize=10;
+let reportLeaveDataFull=[];
 function loadReports(){
 fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})})
 .then(r=>r.json()).then(attData=>{
 fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})})
 .then(r=>r.json()).then(leaveData=>{
   let attMap={};
-  attData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==userName)return;if(userRole==="BPM"&&r[3]!==userBlock)return; attMap[r[1]]=(attMap[r[1]]||0)+1;});
-  reportDataFull=Object.entries(attMap).map(([name,count])=>({name,count})); reportPage=1; renderReportTable(leaveData);
+  attData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==employeeName)return;if(userRole==="BPM"&&r[3]!==userBlock)return; attMap[r[1]]=(attMap[r[1]]||0)+1;});
+  reportDataFull = Object.entries(attMap).map(([name,count])=>({name,count}));
+reportLeaveDataFull = leaveData;   //  STORE LEAVE DATA
+reportPage = 1;
+renderReportTable(reportLeaveDataFull);
+
 });
 });
 }
@@ -618,16 +627,22 @@ html+=`<tr><td colspan="2"><button onclick="changeReportPage(-1)">Prev</button>
 Page ${reportPage} of ${Math.ceil(reportDataFull.length/reportPageSize)}
 <button onclick="changeReportPage(1)">Next</button></td></tr></table>`;
 html+="<h5>Leave Summary</h5><table><tr><th>Name</th><th>Days</th><th>Status</th></tr>";
-leaveData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==userName)return;if(userRole==="BPM"&&r[2]!==userBlock)return; html+=`<tr><td>${r[1]}</td><td>${r[5]}</td><td>${r[7]}</td></tr>`;});
+leaveData.slice(1).forEach(r=>{if(userRole==="Cadre"&&r[1]!==employeeName)return;if(userRole==="BPM"&&r[2]!==userBlock)return; html+=`<tr><td>${r[1]}</td><td>${r[5]}</td><td>${r[7]}</td></tr>`;});
 html+="</table>"; reportContent.innerHTML=html;
 }
-function changeReportPage(delta){reportPage=Math.max(1,Math.min(Math.ceil(reportDataFull.length/reportPageSize),reportPage+delta)); renderReportTable([]);}
+function changeReportPage(delta){
+  reportPage = Math.max(1,
+    Math.min(Math.ceil(reportDataFull.length/reportPageSize),
+    reportPage+delta));
+  renderReportTable(reportLeaveDataFull);   //  USE STORED DATA
+}
+
 
 /* ---------- COUNTS ---------- */
 function loadCounts(){
 fetch(API,{method:"POST",body:JSON.stringify({action:"getAttendance"})}).then(r=>r.json()).then(data=>{
     if(userRole==="Cadre"){
-        let count = data.slice(1).filter(d=>d[1]===userName).length;
+        let count = data.slice(1).filter(d=>d[1]===employeeName).length;
         attCount.innerText=count;
     } else if(userRole==="BPM" || userRole==="Block"){
         attCount.innerText=data.length-1;
@@ -758,7 +773,7 @@ doc.rect(0,0,pageWidth,20,"F");
 doc.setTextColor(255,255,255);
 doc.setFontSize(16);
 doc.setFont(undefined,"bold");
-doc.text("Total CLF's = 4 | Total = VO'S = 44", pageWidth/2, 12, {align:"center"});
+doc.text("Total CLF's = 4 | Total VO's = 45", pageWidth/2, 12, {align:"center"});
 
 doc.setTextColor(0,0,0);
 doc.setFontSize(13);
@@ -796,12 +811,18 @@ let monthlySummary = {};
 /* ===== PROCESS ATTENDANCE ===== */
 
 attData.slice(1).forEach(row=>{
+
+    let fullTimestamp = new Date(row[0]);   // Google Sheet Timestamp
     let rowDate = new Date(row[0]);
+
     if(rowDate >= from && rowDate <= to){
+
+        let timeString = fullTimestamp.toLocaleTimeString();
 
         attendanceRows.push([
             row[1], 
             formatDate(rowDate), 
+            timeString,
             "Present"
         ]);
 
@@ -843,7 +864,7 @@ doc.text("ATTENDANCE", pageWidth/2, 50, {align:"center"});
 
 doc.autoTable({
     startY: 55,
-    head: [["Name", "Date", "Status"]],
+    head: [["Name", "Date", "Time Stamp", "Status"]],
     body: attendanceRows,
     theme: "grid",
     styles: { fontSize: 9 },
@@ -977,9 +998,6 @@ body{
 <div class="footer-notice">
 ⚠ All CLF's and VO's staff must mark Daily.
 </div>
-
-
-
 </body>
 </html>
 
