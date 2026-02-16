@@ -6,6 +6,8 @@
 <title>BasantgarhAttendance</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -257,8 +259,17 @@ th{background:#2563eb;color:white}
 
 <div id="reportTab" class="hidden">
 <h4><i class="fa-solid fa-chart-column"></i> Attendance & Leave Reports</h4>
+
+<div id="blockDateFilter" style="margin-bottom:15px; display:none;">
+    <label><b>From:</b></label>
+    <input type="date" id="reportFromDate">
+    <label style="margin-left:10px;"><b>To:</b></label>
+    <input type="date" id="reportToDate">
+</div>
+
 <div id="reportContent"></div>
 </div>
+
 
 <script>
 
@@ -605,6 +616,287 @@ window.fetch = function(){
         .finally(() => hideLoader());
 };
 
+
+
+/* ================================
+   BLOCK DOWNLOAD REPORT BUTTON
+================================ */
+
+function downloadFullBlockReportCSV(){
+
+let csv = "Attendance Summary\n";
+csv += "Name,Attendance Count\n";
+
+reportDataFull.forEach(r=>{
+    csv += r.name + "," + r.count + "\n";
+});
+
+csv += "\nLeave Summary\n";
+csv += "Name,Days,Status\n";
+
+fetch(API,{
+    method:"POST",
+    body:JSON.stringify({action:"getLeave"})
+})
+.then(r=>r.json())
+.then(data=>{
+    data.slice(1).forEach(row=>{
+        csv += row[1] + "," + row[5] + "," + row[7] + "\n";
+    });
+
+    let blob = new Blob([csv], { type: "text/csv" });
+    let url = window.URL.createObjectURL(blob);
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = "Full_Block_Report.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+});
+}
+
+
+/* ================================
+   WORKING GOVERNMENT STYLE PDF
+================================ */
+
+async function downloadFullBlockReportPDF(){
+
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF("landscape");
+
+const pageWidth = doc.internal.pageSize.getWidth();
+const pageHeight = doc.internal.pageSize.getHeight();
+
+/* Date Format */
+function formatDate(dateObj){
+    let d = ("0" + dateObj.getDate()).slice(-2);
+    let m = ("0" + (dateObj.getMonth()+1)).slice(-2);
+    let y = dateObj.getFullYear();
+    return d + "-" + m + "-" + y;
+}
+
+function getMonthYear(dateObj){
+    const months = ["January","February","March","April","May","June",
+                    "July","August","September","October","November","December"];
+    return months[dateObj.getMonth()] + " " + dateObj.getFullYear();
+}
+
+const today = formatDate(new Date());
+
+const fromDate = document.getElementById("reportFromDate").value;
+const toDate = document.getElementById("reportToDate").value;
+
+if(!fromDate || !toDate){
+    alert("Please select From and To dates");
+    return;
+}
+
+let from = new Date(fromDate);
+let to = new Date(toDate);
+to.setHours(23,59,59,999);
+
+/* ===== HEADER ===== */
+
+doc.setFillColor(37,99,235);
+doc.rect(0,0,pageWidth,20,"F");
+
+doc.setTextColor(255,255,255);
+doc.setFontSize(16);
+doc.setFont(undefined,"bold");
+doc.text("GOVERNMENT OF JAMMU & KASHMIR", pageWidth/2, 12, {align:"center"});
+
+doc.setTextColor(0,0,0);
+doc.setFontSize(13);
+doc.text("NRLM Attendance & Leave Monitoring System", pageWidth/2, 30, {align:"center"});
+
+doc.setFontSize(12);
+doc.text("Block: " + userBlock, pageWidth/2, 38, {align:"center"});
+
+doc.setFontSize(10);
+doc.text("Date Generated: " + today, pageWidth - 70, 30);
+doc.text("Report Range: " + formatDate(from) + " to " + formatDate(to), 14, 30);
+
+/* ===== FETCH DATA ===== */
+
+const attResponse = await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({action:"getAttendance"})
+});
+const attData = await attResponse.json();
+
+const leaveResponse = await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({action:"getLeave"})
+});
+const leaveData = await leaveResponse.json();
+
+let attendanceRows = [];
+let leaveRows = [];
+
+let totalAttendance = 0;
+let totalLeaveDays = 0;
+
+let monthlySummary = {};
+
+/* ===== PROCESS ATTENDANCE ===== */
+
+attData.slice(1).forEach(row=>{
+    let rowDate = new Date(row[0]);
+    if(rowDate >= from && rowDate <= to){
+
+        attendanceRows.push([
+            row[1], 
+            formatDate(rowDate), 
+            "Present"
+        ]);
+
+        totalAttendance++;
+
+        let key = getMonthYear(rowDate);
+        if(!monthlySummary[key]) monthlySummary[key] = {attendance:0, leave:0};
+        monthlySummary[key].attendance++;
+    }
+});
+
+/* ===== PROCESS LEAVE ===== */
+
+leaveData.slice(1).forEach(row=>{
+    let leaveDate = new Date(row[3]);
+    if(leaveDate >= from && leaveDate <= to){
+
+        leaveRows.push([
+            row[1],
+            formatDate(leaveDate),
+            row[5],
+            row[7]
+        ]);
+
+        let days = Number(row[5]) || 0;
+        totalLeaveDays += days;
+
+        let key = getMonthYear(leaveDate);
+        if(!monthlySummary[key]) monthlySummary[key] = {attendance:0, leave:0};
+        monthlySummary[key].leave += days;
+    }
+});
+
+/* ===== ATTENDANCE TABLE ===== */
+
+doc.setFontSize(14);
+doc.setFont(undefined,"bold");
+doc.text("ATTENDANCE", pageWidth/2, 50, {align:"center"});
+
+doc.autoTable({
+    startY: 55,
+    head: [["Name", "Date", "Status"]],
+    body: attendanceRows,
+    theme: "grid",
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [37,99,235] }
+});
+
+doc.setFontSize(11);
+doc.text("Total Attendance Entries: " + totalAttendance, 14, doc.lastAutoTable.finalY + 8);
+
+/* ===== LEAVE TABLE ===== */
+
+doc.setFontSize(14);
+doc.text("LEAVE", pageWidth/2, doc.lastAutoTable.finalY + 20, {align:"center"});
+
+doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 25,
+    head: [["Name", "Date", "Days", "Status"]],
+    body: leaveRows,
+    theme: "grid",
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [16,163,74] }
+});
+
+doc.setFontSize(11);
+doc.text("Total Leave Days: " + totalLeaveDays, 14, doc.lastAutoTable.finalY + 8);
+
+/* ===== MONTHLY SUMMARY ===== */
+
+let summaryRows = [];
+
+Object.keys(monthlySummary).forEach(month=>{
+    summaryRows.push([
+        month,
+        monthlySummary[month].attendance,
+        monthlySummary[month].leave
+    ]);
+});
+
+doc.addPage();
+
+doc.setFontSize(16);
+doc.setFont(undefined,"bold");
+doc.text("MONTHLY SUMMARY BREAKDOWN", pageWidth/2, 30, {align:"center"});
+
+doc.autoTable({
+    startY: 40,
+    head: [["Month", "Attendance Count", "Leave Days"]],
+    body: summaryRows,
+    theme: "grid",
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: [99,102,241] }
+});
+
+/* ===== PAGE NUMBERS ===== */
+
+const totalPages = doc.internal.getNumberOfPages();
+
+for(let i=1;i<=totalPages;i++){
+    doc.setPage(i);
+    doc.setFontSize(9);
+    doc.text(
+        "Page " + i + " of " + totalPages,
+        pageWidth - 40,
+        pageHeight - 10
+    );
+}
+
+doc.save("Block_Report_" + userBlock + "_" + formatDate(from) + "_to_" + formatDate(to) + ".pdf");
+}
+
+
+
+/* ================================
+   SHOW BUTTON ONLY ONCE FOR BLOCK
+================================ */
+
+const originalRenderReportTable = renderReportTable;
+
+renderReportTable = function(leaveData){
+    originalRenderReportTable(leaveData);
+
+    if(userRole === "Block"){
+
+        document.getElementById("blockDateFilter").style.display = "block";
+
+        // Prevent duplicate button
+        if(!document.getElementById("downloadPdfBtn")){
+
+            const container = document.createElement("div");
+            container.style.marginBottom = "15px";
+            container.id = "blockDownloadContainer";
+
+            const pdfBtn = document.createElement("button");
+            pdfBtn.id = "downloadPdfBtn";
+            pdfBtn.innerHTML = "<i class='fa-solid fa-file-pdf'></i> Download PDF";
+            pdfBtn.onclick = downloadFullBlockReportPDF;
+
+            container.appendChild(pdfBtn);
+
+            const reportTabDiv = document.getElementById("reportTab");
+            reportTabDiv.insertBefore(container, reportTabDiv.children[2]);
+        }
+    }
+};
+
+
+
 </script>
 
 <style>
@@ -636,7 +928,6 @@ body{
 
 </body>
 </html>
-
 
 
 
