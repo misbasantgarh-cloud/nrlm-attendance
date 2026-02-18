@@ -343,18 +343,18 @@ function setupTabs(){
 const tabDiv=document.getElementById("tabs"); tabDiv.innerHTML="";
 if(userRole==="Cadre"){
 tabDiv.innerHTML=`<button onclick="showTab('attendance')" class="activeTab">Attendance</button>
-                  <button onclick="showTab('leave')">Leave</button>
+                  <button onclick="showTab('leave')">Leave / Field Visit</button>
                   <button onclick="showTab('report')">My Reports</button>`;
 showTab('attendance');
 }
 if(userRole==="BPM"){
-tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
+tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave / Field Visit Approvals</button>
                   <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
                   <button onclick="showTab('report')">Block Reports</button>`;
 showTab('approvalLeave');
 }
 if(userRole==="Block"){
-tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
+tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave / Field Visit Approvals</button>
                   <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
                   <button onclick="showTab('report')">Full Block Reports</button>`;
 showTab('approvalLeave');
@@ -1000,6 +1000,7 @@ body{
 </div>
 </body>
 </html>
+
 
 
 
