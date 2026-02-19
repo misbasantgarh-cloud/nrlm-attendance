@@ -230,7 +230,46 @@ th{background:#2563eb;color:white}
 
 <div id="attendanceTab" class="hidden">
 <h4><i class="fa-solid fa-location-crosshairs"></i> Mark Attendance</h4>
-<button onclick="markAttendance()"><i class="fa-solid fa-fingerprint"></i> Mark Attendance</button>
+<button onclick="openCamera()"><i class="fa-solid fa-fingerprint"></i> Mark Attendance</button>
+
+<div id="cameraSection" class="hidden" style="margin-top:15px;">
+
+    <!-- Video Wrapper -->
+    <div style="position:relative; width:300px;">
+
+        <video id="video" autoplay playsinline width="300" style="border-radius:10px;"></video>
+
+        <!-- Live Overlay -->
+        <div id="liveOverlay" style="
+            position:absolute;
+            bottom:0;
+            left:0;
+            width:100%;
+            background:rgba(0,0,0,0.65);
+            color:white;
+            font-size:12px;
+            padding:8px;
+            box-sizing:border-box;
+            border-bottom-left-radius:10px;
+            border-bottom-right-radius:10px;
+        ">
+        </div>
+
+    </div>
+
+    <!-- Button OUTSIDE video wrapper -->
+    
+<button id="captureBtn" style="margin-top:10px;" onclick="capturePhoto()" disabled>
+    <i class="fa-solid fa-camera"></i> Waiting for GPS...
+</button>
+
+
+    <canvas id="canvas" class="hidden"></canvas>
+
+</div>
+
+
+
 <div class="geo-status" id="geoStatus"></div>
 <p id="attMsg"></p>
 </div>
@@ -274,7 +313,7 @@ th{background:#2563eb;color:white}
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbz9tQ6O4Z-2-15GYeP3BaReJMQOihyTAKmkd6Ic7oSue4xWxVG4Q4uudmdOaDp1Ysckcg/exec";
+const API="https://script.google.com/macros/s/AKfycbzwO_TotE5IFWLHHTka-pjkfTu8d2LbGS77Iuy78meGEwPJjB4qmFkoCwebOBaDMRPc_A/exec";
 let userRole="",userBlock="",userName="",employeeName="";
 
 
@@ -343,18 +382,18 @@ function setupTabs(){
 const tabDiv=document.getElementById("tabs"); tabDiv.innerHTML="";
 if(userRole==="Cadre"){
 tabDiv.innerHTML=`<button onclick="showTab('attendance')" class="activeTab">Attendance</button>
-                  <button onclick="showTab('leave')">Leave / Field Visit</button>
+                  <button onclick="showTab('leave')">Leave</button>
                   <button onclick="showTab('report')">My Reports</button>`;
 showTab('attendance');
 }
 if(userRole==="BPM"){
-tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave / Field Visit Approvals</button>
+tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
                   <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
                   <button onclick="showTab('report')">Block Reports</button>`;
 showTab('approvalLeave');
 }
 if(userRole==="Block"){
-tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave / Field Visit Approvals</button>
+tabDiv.innerHTML=`<button onclick="showTab('approvalLeave')" class="activeTab">Leave Approvals</button>
                   <button onclick="showTab('approvalAttendance')">Attendance Approvals</button>
                   <button onclick="showTab('report')">Full Block Reports</button>`;
 showTab('approvalLeave');
@@ -598,7 +637,7 @@ function approveAttendance(row, action){
       } else { alert("Approval failed: "+res.message); }
   });
 }
-
+    /* ---------- END ---------- */
 /* ---------- REPORTS ---------- */
 let reportDataFull=[], reportPage=1, reportPageSize=10;
 let reportLeaveDataFull=[];
@@ -657,6 +696,181 @@ fetch(API,{method:"POST",body:JSON.stringify({action:"getLeave"})}).then(r=>r.js
     }
 });
 }
+
+
+let capturedImage = "";
+let liveTimeInterval = null;
+let currentLatitude = "Fetching...";
+let currentLongitude = "Fetching...";
+let currentAccuracy = "";
+let cameraStream = null;
+let gpsWatcherId = null;
+
+function openCamera() {
+    const cameraSection = document.getElementById("cameraSection");
+    const video = document.getElementById("video");
+    const overlay = document.getElementById("liveOverlay");
+    const captureBtn = document.getElementById("captureBtn");
+
+    captureBtn.disabled = true;
+    captureBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Waiting for GPS...';
+
+    cameraSection.classList.remove("hidden");
+
+    // Stop previous intervals or GPS watchers
+    if (liveTimeInterval) clearInterval(liveTimeInterval);
+    if (gpsWatcherId) navigator.geolocation.clearWatch(gpsWatcherId);
+
+    // Start Camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: {ideal:1280}, height:{ideal:720} } })
+        .then(stream => {
+            video.srcObject = stream;
+            cameraStream = stream;
+        })
+        .catch(() => {
+            alert("Camera permission denied or not available.");
+            return;
+        });
+
+    // Continuous GPS
+    overlay.innerHTML = "Improving GPS accuracy...";
+    gpsWatcherId = navigator.geolocation.watchPosition(
+        function (pos) {
+            currentLatitude = pos.coords.latitude.toFixed(6);
+            currentLongitude = pos.coords.longitude.toFixed(6);
+            currentAccuracy = pos.coords.accuracy.toFixed(1) + " m";
+
+            if (pos.coords.accuracy <= 200) {
+                captureBtn.disabled = false;
+                captureBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Capture Photo';
+            } else {
+                captureBtn.disabled = true;
+                captureBtn.innerHTML = "Improving GPS... (" + currentAccuracy + ")";
+            }
+        },
+        function () {
+            currentLatitude = "Not Available";
+            currentLongitude = "Not Available";
+            currentAccuracy = "Unknown";
+
+            captureBtn.disabled = true;
+            captureBtn.innerHTML = "Location Permission Required";
+        },
+        { enableHighAccuracy: true, maximumAge: 0 }
+    );
+
+    // Live Date & Time Overlay
+    liveTimeInterval = setInterval(() => {
+        const now = new Date();
+        overlay.innerHTML =
+            `<b>Employee:</b> ${employeeName}<br>` +
+            `<b>Block:</b> ${userBlock}<br>` +
+            `<b>Date:</b> ${now.toLocaleDateString()}<br>` +
+            `<b>Time:</b> ${now.toLocaleTimeString()}<br>` +
+            `<b>Latitude:</b> ${currentLatitude}<br>` +
+            `<b>Longitude:</b> ${currentLongitude}<br>` +
+            `<b>Accuracy:</b> ${currentAccuracy}`;
+    }, 1000);
+}
+
+function capturePhoto() {
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Adjust canvas size to video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw video frame
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Overlay: semi-transparent background gradient
+    const boxHeight = Math.floor(canvas.height * 0.25);
+    const gradient = ctx.createLinearGradient(0, canvas.height - boxHeight, 0, canvas.height);
+    gradient.addColorStop(0, "rgba(0,0,0,0.6)");
+    gradient.addColorStop(1, "rgba(0,0,0,0.8)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, canvas.height - boxHeight, canvas.width, boxHeight);
+
+    // Dynamic font size
+    const fontSize = Math.max(16, Math.floor(canvas.height / 35));
+    ctx.font = `bold ${fontSize}px Arial`;
+    ctx.fillStyle = "#ffffff";
+
+    const yStart = canvas.height - boxHeight + fontSize;
+    ctx.fillText(`Employee: ${employeeName}`, 20, yStart);
+    ctx.fillText(`Block: ${userBlock}`, 20, yStart + fontSize + 5);
+    const now = new Date();
+    ctx.fillText(`Date: ${now.toLocaleDateString()}`, 20, yStart + 2*(fontSize + 5));
+    ctx.fillText(`Time: ${now.toLocaleTimeString()}`, 20, yStart + 3*(fontSize + 5));
+    ctx.fillText(`Lat: ${currentLatitude}`, 20, yStart + 4*(fontSize + 5));
+    ctx.fillText(`Long: ${currentLongitude}`, 20, yStart + 5*(fontSize + 5));
+
+    // Optional watermark
+    ctx.globalAlpha = 0.3;
+    ctx.font = `${Math.floor(canvas.height/15)}px Arial`;
+    ctx.fillText("Basantgarh Attendance", canvas.width - 300, canvas.height - 20);
+    ctx.globalAlpha = 1;
+
+    capturedImage = canvas.toDataURL("image/jpeg", 0.95);
+
+    // Shutter flash effect
+    const cameraSection = document.getElementById("cameraSection");
+    cameraSection.classList.add("flash");
+    setTimeout(() => cameraSection.classList.remove("flash"), 300);
+
+    clearInterval(liveTimeInterval);
+    markAttendance();
+}
+
+
+function markAttendance() {
+    if (!capturedImage) {
+        alert("Please capture photo first");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        fetch(API, {
+            method: "POST",
+            body: JSON.stringify({
+                action: "markAttendance",
+                name: employeeName,
+                role: userRole,
+                block: userBlock,
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                photo: capturedImage
+            })
+        })
+        .then(r => r.json())
+        .then(res => {
+            attMsg.innerText = res.message || "Attendance Submitted Successfully";
+            capturedImage = "";
+
+            // Smooth fade-out
+            const cameraSection = document.getElementById("cameraSection");
+            cameraSection.classList.add("fade-out");
+
+            setTimeout(() => {
+                if(cameraStream){
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    cameraStream = null;
+                }
+                document.getElementById("video").srcObject = null;
+                cameraSection.classList.add("hidden");
+                cameraSection.classList.remove("fade-out");
+            }, 500);
+
+            loadCounts();
+            loadReports();
+        });
+    });
+}
+
+
+
 
     /* ===== LOADER ===== */
 function showLoader(){document.getElementById("loader").style.display="flex";}
@@ -992,6 +1206,25 @@ renderReportTable = function(leaveData){
 body{
     padding-bottom:60px;
 }
+
+/* Smooth fade-out */
+#cameraSection {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.fade-out {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+/* Shutter flash effect */
+#cameraSection.flash {
+    animation: flash 0.3s;
+}
+@keyframes flash {
+    0% { background-color: rgba(255,255,255,0.5); }
+    100% { background-color: transparent; }
+}
+
 
 </style>
 
