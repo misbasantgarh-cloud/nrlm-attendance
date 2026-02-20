@@ -211,7 +211,12 @@ th{background:#2563eb;color:white}
 <div class="card" id="loginCard">
 <h3><i class="fa-solid fa-user"></i> Login</h3>
 <input type="text" id="username" placeholder="Username">
-<input type="password" id="password" placeholder="Password">
+<input type="password" id="password" placeholder="Password"
+       style="padding-right:40px; max-width:400px;">
+<i class="fa-solid fa-eye" id="togglePassword"
+   onclick="togglePassword()"
+   style="position:relative; left:-35px; cursor:pointer; color:#64748b;">
+</i>
 <button onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
 <p id="loginMsg" style="color:red;"></p>
 </div>
@@ -940,7 +945,7 @@ fetch(API,{
 
 
 /* ================================
-   WORKING GOVERNMENT STYLE PDF
+   WORKING STYLE PDF
 ================================ */
 
 async function downloadFullBlockReportPDF(){
@@ -1185,7 +1190,24 @@ renderReportTable = function(leaveData){
 };
 
 
+/* ================================
+   PASSWORD EYE FEATURE
+================================ */
+function togglePassword() {
+    const passwordField = document.getElementById("password");
+    const icon = document.getElementById("togglePassword");
 
+    if (passwordField.type === "password") {
+        passwordField.type = "text";
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+    } else {
+        passwordField.type = "password";
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
+    }
+}
+    
 </script>
 
 <style> 
@@ -1233,6 +1255,7 @@ body{
 </div>
 </body>
 </html>
+
 
 
 
