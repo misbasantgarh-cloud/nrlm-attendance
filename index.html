@@ -211,12 +211,14 @@ th{background:#2563eb;color:white}
 <div class="card" id="loginCard">
 <h3><i class="fa-solid fa-user"></i> Login</h3>
 <input type="text" id="username" placeholder="Username">
-<input type="password" id="password" placeholder="Password"
-       style="padding-right:40px; max-width:400px;">
-<i class="fa-solid fa-eye" id="togglePassword"
-   onclick="togglePassword()"
-   style="position:relative; left:-35px; cursor:pointer; color:#64748b;">
-</i>
+<div style="position:relative; max-width:400px;">
+    <input type="password" id="password" placeholder="Password" style="padding-right:40px;">
+    <i class="fa-solid fa-eye" id="togglePassword"
+       onclick="togglePassword()"
+       style="position:absolute; right:12px; top:50%; transform:translateY(-50%);
+              cursor:pointer; color:#64748b;">
+    </i>
+</div>
 <button onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
 <p id="loginMsg" style="color:red;"></p>
 </div>
@@ -1255,6 +1257,7 @@ body{
 </div>
 </body>
 </html>
+
 
 
 
