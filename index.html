@@ -196,12 +196,11 @@ th{background:#2563eb;color:white}
 <span style="color:#facc15; font-weight:400; text-shadow:0 0 6px rgba(250,204,21,0.6);">
               ⚠ Mark at Assigned Office.
 </span>
-    <marquee behavior="scroll" direction="left" scrollamount="5" 
-style="background-color:#fff3cd; color:#856404; 
-padding:10px; font-weight:bold; font-size:16px; border:1px solid #ffeeba;">
-NOTE: Attendance Must be Marked Before 11:30 AM.
-</marquee>
-
+    <span class="notice-container">
+  <span class="notice-text">
+    NOTE: Attendance must be marked before 11:30 AM Daily.
+  </span>
+</span>
 </header>
 
 <div class="loader" id="loader">
@@ -1223,6 +1222,7 @@ function togglePassword() {
 
 
 .notice-container {
+  display: block; /* important */
   width: 100%;
   overflow: hidden;
   background: linear-gradient(90deg, #fff3cd, #ffe8a1);
@@ -1235,18 +1235,34 @@ function togglePassword() {
   display: inline-block;
   white-space: nowrap;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 20px;
   color: #856404;
-  padding-left: 100%;
-  animation: scrollText 12s linear infinite;
-  text-shadow: 0 0 5px rgba(255,193,7,0.7);
+
+  animation: scrollMove 8s linear infinite alternate,
+             glowPulse 1.5s ease-in-out infinite;
 }
 
-@keyframes scrollText {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+/* Left ↔ Right Scroll */
+@keyframes scrollMove {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
+/* Glow Effect */
+@keyframes glowPulse {
+  0%, 100% {
+    text-shadow: 
+      0 0 5px #ffc107,
+      0 0 10px #ffc107,
+      0 0 20px #ff9800;
+  }
+  50% {
+    text-shadow: 
+      0 0 10px #ffeb3b,
+      0 0 20px #ff9800,
+      0 0 30px #ff5722;
+  }
+}
 
 
 /* MARQUEE MESSAGE */
@@ -1295,6 +1311,7 @@ body{
 </div>
 </body>
 </html>
+
 
 
 
