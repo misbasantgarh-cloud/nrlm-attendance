@@ -196,6 +196,11 @@ th{background:#2563eb;color:white}
 <span style="color:#facc15; font-weight:400; text-shadow:0 0 6px rgba(250,204,21,0.6);">
               ⚠ Mark at Assigned Office.
 </span>
+    <marquee behavior="scroll" direction="left" scrollamount="5" 
+style="background-color:#fff3cd; color:#856404; 
+padding:10px; font-weight:bold; font-size:16px; border:1px solid #ffeeba;">
+NOTE: Attendance Must be Marked Before 11:30 AM.
+</marquee>
 
 </header>
 
@@ -1212,7 +1217,40 @@ function togglePassword() {
     
 </script>
 
-<style> 
+<style>
+
+/* MARQUEE MESSAGE */
+
+
+.notice-container {
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(90deg, #fff3cd, #ffe8a1);
+  border: 1px solid #ffeeba;
+  padding: 12px 0;
+  position: relative;
+}
+
+.notice-text {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: bold;
+  font-size: 18px;
+  color: #856404;
+  padding-left: 100%;
+  animation: scrollText 12s linear infinite;
+  text-shadow: 0 0 5px rgba(255,193,7,0.7);
+}
+
+@keyframes scrollText {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+
+
+/* MARQUEE MESSAGE */
+    
 .footer-notice{
     position:fixed;
     bottom:0;
@@ -1257,6 +1295,7 @@ body{
 </div>
 </body>
 </html>
+
 
 
 
