@@ -222,7 +222,12 @@ th{background:#2563eb;color:white}
 <button onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
 <p id="loginMsg" style="color:red;"></p>
 </div>
-
+<!-- Flashing Red Warning Marquee -->
+<div class="alert-bar">
+  <div class="alert-text">
+    🚨 URGENT: Mark Attendance Before 11:30 AM Daily | Late Marking Will Not Be Accepted 🚨
+  </div>
+</div>
 <!-- DASHBOARD -->
 <div class="card hidden" id="dashboard">
 <h3 id="welcome"></h3>
@@ -1249,7 +1254,46 @@ body{
     100% { background-color: transparent; }
 }
 
+/* Marquee Mesaage */
 
+ .alert-bar {
+  width: 100%;
+  background: #b30000;
+  color: #ffffff;
+  padding: 12px 0;
+  overflow: hidden;
+  position: relative;
+  font-weight: bold;
+  font-size: 18px;
+  border-bottom: 4px solid yellow;
+  animation: flashBackground 1s infinite alternate;
+}
+
+.alert-text {
+  display: inline-block;
+  white-space: nowrap;
+  padding-left: 100%;
+  animation: scrollAlert 14s linear infinite;
+}
+
+.alert-text:hover {
+  animation-play-state: paused;
+  cursor: pointer;
+}
+
+/* Flashing effect */
+@keyframes flashBackground {
+  from { background-color: #b30000; }
+  to { background-color: #ff0000; }
+}
+
+/* Scrolling effect */
+@keyframes scrollAlert {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}   
+
+    
 </style>
 
 <div class="footer-notice">
@@ -1257,6 +1301,7 @@ body{
 </div>
 </body>
 </html>
+
 
 
 
