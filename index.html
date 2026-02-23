@@ -196,6 +196,7 @@ th{background:#2563eb;color:white}
 <span style="color:#facc15; font-weight:400; text-shadow:0 0 6px rgba(250,204,21,0.6);">
               ⚠ Mark at Assigned Office.
 </span>
+    <div id="liveClock" style="font-size:14px;"></div>
     <span class="notice-container">
   <span class="notice-text">
     NOTE: Mark Before 11:30 AM.
@@ -1262,6 +1263,13 @@ function togglePassword() {
         icon.classList.add("fa-eye");
     }
 }
+
+/* Clock */
+
+setInterval(()=>{
+document.getElementById("liveClock").innerText =
+"Current Time: " + new Date().toLocaleTimeString();
+},1000);
     
 </script>
 
@@ -1360,6 +1368,7 @@ body{
 </div>
 </body>
 </html>
+
 
 
 
