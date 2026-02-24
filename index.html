@@ -192,11 +192,10 @@ th{background:#2563eb;color:white}
 <header>
 <i class="fa-solid fa-location-dot"></i> NRLM | BPM Attendance Portal
     </br>
-
 <span style="color:#facc15; font-weight:400; text-shadow:0 0 6px rgba(250,204,21,0.6);">
               ⚠ Mark at Assigned Office.
 </span>
-    <div id="liveClock" style="font-size:14px;"></div>
+<div id="liveClock" style="font-size:14px;"></div>
     <span class="notice-container">
   <span class="notice-text">
     NOTE: Mark Before 11:30 AM.
@@ -1004,6 +1003,22 @@ fetch(API,{
    WORKING STYLE PDF
 ================================ */
 
+function extractDriveFileId(link) {
+    const match = link.match(/\/d\/(.*?)\//);
+    return match ? match[1] : null;
+}
+
+async function getBase64ImageFromURL(url) {
+    const res = await fetch(url);
+    const blob = await res.blob();
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+    });
+}
+
 async function downloadFullBlockReportPDF(){
 
 const { jsPDF } = window.jspdf;
@@ -1085,30 +1100,61 @@ let monthlySummary = {};
 
 /* ===== PROCESS ATTENDANCE ===== */
 
+/* ===== PROCESS ATTENDANCE WITH ABSENT ===== */
+
+let employeeSet = new Set();
+let attendanceMap = {};
+
+/* Collect all employees */
 attData.slice(1).forEach(row=>{
-
-    let fullTimestamp = new Date(row[0]);   // Google Sheet Timestamp
-    let rowDate = new Date(row[0]);
-
-    if(rowDate >= from && rowDate <= to){
-
-        let timeString = fullTimestamp.toLocaleTimeString();
-
-        attendanceRows.push([
-            row[1], 
-            formatDate(rowDate), 
-            timeString,
-            "Present"
-        ]);
-
-        totalAttendance++;
-
-        let key = getMonthYear(rowDate);
-        if(!monthlySummary[key]) monthlySummary[key] = {attendance:0, leave:0};
-        monthlySummary[key].attendance++;
-    }
+    employeeSet.add(row[1]);
 });
 
+/* Create attendance map */
+attData.slice(1).forEach(row=>{
+    let rowDate = new Date(row[0]);
+    let key = row[1] + "_" + formatDate(rowDate);
+    attendanceMap[key] = row;
+});
+
+/* Loop Date Range */
+for(let d = new Date(from); d <= to; d.setDate(d.getDate()+1)){
+
+    let currentDate = new Date(d);
+    let formattedDate = formatDate(currentDate);
+
+    employeeSet.forEach(name=>{
+
+        let key = name + "_" + formattedDate;
+
+        if(attendanceMap[key]){
+
+            let fullTimestamp = new Date(attendanceMap[key][0]);
+            let timeString = fullTimestamp.toLocaleTimeString();
+
+            attendanceRows.push([
+                name,
+                formattedDate,
+                timeString,
+                "Present"
+            ]);
+
+            totalAttendance++;
+	let monthKey = getMonthYear(currentDate);
+if(!monthlySummary[monthKey]) monthlySummary[monthKey] = {attendance:0, leave:0};
+monthlySummary[monthKey].attendance++;
+
+        } else {
+
+            attendanceRows.push([
+                name,
+                formattedDate,
+                "-",
+                "Absent"
+            ]);
+        }
+    });
+}
 /* ===== PROCESS LEAVE ===== */
 
 leaveData.slice(1).forEach(row=>{
@@ -1143,11 +1189,15 @@ doc.autoTable({
     body: attendanceRows,
     theme: "grid",
     styles: { fontSize: 9 },
-    headStyles: { fillColor: [37,99,235] }
-});
+    headStyles: { fillColor: [37,99,235] },
 
-doc.setFontSize(11);
-doc.text("Total Attendance Entries: " + totalAttendance, 14, doc.lastAutoTable.finalY + 8);
+    didParseCell: function (data) {
+        if (data.column.index === 3 && data.cell.raw === "Absent") {
+            data.cell.styles.textColor = [220,38,38]; // RED
+            data.cell.styles.fontStyle = "bold";
+        }
+    }
+});
 
 /* ===== LEAVE TABLE ===== */
 
@@ -1263,6 +1313,7 @@ function togglePassword() {
         icon.classList.add("fa-eye");
     }
 }
+    
 
 /* Clock */
 
@@ -1270,7 +1321,6 @@ setInterval(()=>{
 document.getElementById("liveClock").innerText =
 "Current Time: " + new Date().toLocaleTimeString();
 },1000);
-    
 </script>
 
 <style>
@@ -1368,19 +1418,5 @@ body{
 </div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
