@@ -810,12 +810,12 @@ function openCamera() {
     liveTimeInterval = setInterval(() => {
         const now = new Date();
         overlay.innerHTML =
-            `<b>Employee:</b> ${employeeName}<br>` +
-            `<b>Block:</b> ${userBlock}<br>` +
+            `<b>EMP Name:</b> ${employeeName}<br>` +
+            `<b>CLF | VO:</b> ${userBlock}<br>` +
             `<b>Date:</b> ${now.toLocaleDateString()}<br>` +
             `<b>Time:</b> ${now.toLocaleTimeString()}<br>` +
-            `<b>Latitude:</b> ${currentLatitude}<br>` +
-            `<b>Longitude:</b> ${currentLongitude}<br>` +
+            `<b>Lat:</b> ${currentLatitude}<br>` +
+            `<b>Long:</b> ${currentLongitude}<br>` +
             `<b>Accuracy:</b> ${currentAccuracy}`;
     }, 1000);
 }
@@ -1642,4 +1642,5 @@ body{
 </div>
 </body>
 </html>
+
 
