@@ -421,19 +421,6 @@ if(tab==="approvalAttendance") {approvalAttendanceTab.classList.remove("hidden")
 if(tab==="report") {reportTab.classList.remove("hidden"); document.querySelector(".tabs button:nth-child(3)").classList.add("activeTab");}
 }
 
-/* ---------- ATTENDANCE ---------- */
-function markAttendance(){
-navigator.geolocation.getCurrentPosition(function(pos){
-fetch(API,{
-method:"POST",
-body:JSON.stringify({action:"markAttendance",name:employeeName,role:userRole,block:userBlock,
-                      latitude:pos.coords.latitude,longitude:pos.coords.longitude})
-}).then(r=>r.json()).then(res=>{
-attMsg.innerText=res.message || "Today Attendance Submitted at Your Office";
-loadCounts(); loadReports();
-});
-});
-}
 
 /* ---------- LEAVE ---------- */
 function applyLeave(){
@@ -1067,7 +1054,7 @@ doc.text("Total CLF's = 4 | Total VO's = 45", pageWidth/2, 12, {align:"center"})
 
 doc.setTextColor(0,0,0);
 doc.setFontSize(13);
-doc.text("NRLM Attendance & Leave Monitoring System", pageWidth/2, 30, {align:"center"});
+doc.text("Attendance & Leave Monitoring System", pageWidth/2, 30, {align:"center"});
 
 doc.setFontSize(12);
 doc.text("Block: " + userBlock, pageWidth/2, 38, {align:"center"});
@@ -1100,21 +1087,33 @@ let monthlySummary = {};
 
 /* ===== PROCESS ATTENDANCE ===== */
 
-/* ===== PROCESS ATTENDANCE WITH ABSENT ===== */
+/* ===== PROCESS ATTENDANCE WITH ABSENT + LEAVE CHECK ===== */
 
 let employeeSet = new Set();
 let attendanceMap = {};
+let leaveMap = {};
 
-/* Collect all employees */
+/* Collect employees */
 attData.slice(1).forEach(row=>{
     employeeSet.add(row[1]);
 });
 
 /* Create attendance map */
 attData.slice(1).forEach(row=>{
-    let rowDate = new Date(row[0]);
-    let key = row[1] + "_" + formatDate(rowDate);
+    let rowDate = formatDate(new Date(row[0]));
+    let key = row[1] + "_" + rowDate;
     attendanceMap[key] = row;
+});
+
+/* Create leave map */
+leaveData.slice(1).forEach(row=>{
+    let leaveStart = new Date(row[3]);
+    let leaveEnd = new Date(row[4]);
+
+    for(let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate()+1)){
+        let key = row[1] + "_" + formatDate(d);
+        leaveMap[key] = row;
+    }
 });
 
 /* Loop Date Range */
@@ -1140,11 +1139,23 @@ for(let d = new Date(from); d <= to; d.setDate(d.getDate()+1)){
             ]);
 
             totalAttendance++;
-	let monthKey = getMonthYear(currentDate);
-if(!monthlySummary[monthKey]) monthlySummary[monthKey] = {attendance:0, leave:0};
-monthlySummary[monthKey].attendance++;
 
-        } else {
+            let monthKey = getMonthYear(currentDate);
+            if(!monthlySummary[monthKey]) monthlySummary[monthKey] = {attendance:0, leave:0};
+            monthlySummary[monthKey].attendance++;
+
+        } 
+        else if(leaveMap[key]){
+
+            attendanceRows.push([
+                name,
+                formattedDate,
+                "-",
+                "On Leave"
+            ]);
+
+        } 
+        else {
 
             attendanceRows.push([
                 name,
@@ -1153,6 +1164,7 @@ monthlySummary[monthKey].attendance++;
                 "Absent"
             ]);
         }
+
     });
 }
 /* ===== PROCESS LEAVE ===== */
@@ -1191,12 +1203,26 @@ doc.autoTable({
     styles: { fontSize: 9 },
     headStyles: { fillColor: [37,99,235] },
 
-    didParseCell: function (data) {
-        if (data.column.index === 3 && data.cell.raw === "Absent") {
-            data.cell.styles.textColor = [220,38,38]; // RED
+   didParseCell: function (data) {
+
+    if (data.column.index === 3) {
+
+        if (data.cell.raw === "Absent") {
+            data.cell.styles.textColor = [220,38,38];
+            data.cell.styles.fontStyle = "bold";
+        }
+
+        if (data.cell.raw === "Present") {
+            data.cell.styles.textColor = [16,163,74];
+            data.cell.styles.fontStyle = "bold";
+        }
+
+        if (data.cell.raw === "On Leave") {
+            data.cell.styles.textColor = [37,99,235];
             data.cell.styles.fontStyle = "bold";
         }
     }
+}
 });
 
 /* ===== LEAVE TABLE ===== */
@@ -1243,6 +1269,8 @@ doc.autoTable({
     headStyles: { fillColor: [99,102,241] }
 });
 
+
+
 /* ===== PAGE NUMBERS ===== */
 
 const totalPages = doc.internal.getNumberOfPages();
@@ -1258,6 +1286,195 @@ for(let i=1;i<=totalPages;i++){
 }
 
 doc.save("Block_Report_" + userBlock + "_" + formatDate(from) + "_to_" + formatDate(to) + ".pdf");
+}
+
+/* ================================
+   DOWNLOAD EMPLOYEE MONTHLY ONLY
+================================ */
+
+async function downloadEmployeeMonthlyBreakdownPDF(){
+
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF("landscape");
+
+const pageWidth = doc.internal.pageSize.getWidth();
+const pageHeight = doc.internal.pageSize.getHeight();
+
+/* ===== HEADER ===== */
+
+doc.setFillColor(37,99,235);
+doc.rect(0,0,pageWidth,20,"F");
+
+doc.setTextColor(255,255,255);
+doc.setFontSize(16);
+doc.setFont(undefined,"bold");
+doc.text("Attendance Monitoring System", pageWidth/2, 12, {align:"center"});
+
+doc.setTextColor(0,0,0);
+doc.setFontSize(12);
+doc.text("Block: " + userBlock, pageWidth/2, 30, {align:"center"});
+
+let today = new Date().toLocaleDateString();
+doc.setFontSize(10);
+doc.text("Date Generated: " + today, pageWidth - 70, 30);
+
+
+function formatDate(dateObj){
+    let d = ("0" + dateObj.getDate()).slice(-2);
+    let m = ("0" + (dateObj.getMonth()+1)).slice(-2);
+    let y = dateObj.getFullYear();
+    return d + "-" + m + "-" + y;
+}
+
+function getMonthYear(dateObj){
+    const months = ["January","February","March","April","May","June",
+                    "July","August","September","October","November","December"];
+    return months[dateObj.getMonth()] + " " + dateObj.getFullYear();
+}
+
+const fromDate = document.getElementById("reportFromDate").value;
+const toDate = document.getElementById("reportToDate").value;
+
+if(!fromDate || !toDate){
+    alert("Please select From and To dates");
+    return;
+}
+
+let from = new Date(fromDate);
+let to = new Date(toDate);
+to.setHours(23,59,59,999);
+
+/* FETCH DATA */
+const attResponse = await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({action:"getAttendance"})
+});
+const attData = await attResponse.json();
+
+const leaveResponse = await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({action:"getLeave"})
+});
+const leaveData = await leaveResponse.json();
+
+let employeeSet = new Set();
+let attendanceMap = {};
+let leaveMap = {};
+
+/* Collect employees */
+attData.slice(1).forEach(row=>{
+    employeeSet.add(row[1]);
+});
+
+/* Create attendance map */
+attData.slice(1).forEach(row=>{
+    let date = formatDate(new Date(row[0]));
+    attendanceMap[row[1] + "_" + date] = true;
+});
+
+/* Create leave map */
+leaveData.slice(1).forEach(row=>{
+    let leaveStart = new Date(row[3]);
+    let leaveEnd = new Date(row[4]);
+
+    for(let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate()+1)){
+        let key = row[1] + "_" + formatDate(d);
+        leaveMap[key] = true;
+    }
+});
+
+let employeeMonthly = {};
+
+for(let d = new Date(from); d <= to; d.setDate(d.getDate()+1)){
+
+    let dateObj = new Date(d);
+    if(dateObj.getDay() === 0) continue;
+    let formattedDate = formatDate(dateObj);
+    let monthKey = getMonthYear(dateObj);
+
+    employeeSet.forEach(name=>{
+
+        if(!employeeMonthly[monthKey])
+            employeeMonthly[monthKey] = {};
+
+        if(!employeeMonthly[monthKey][name])
+            employeeMonthly[monthKey][name] = {present:0, leave:0, absent:0};
+
+        let key = name + "_" + formattedDate;
+
+        if(attendanceMap[key])
+            employeeMonthly[monthKey][name].present++;
+        else if(leaveMap[key])
+            employeeMonthly[monthKey][name].leave++;
+        else
+            employeeMonthly[monthKey][name].absent++;
+    });
+}
+
+/* PDF HEADER */
+doc.setFontSize(15);
+doc.setFont(undefined,"bold");
+doc.text("EMPLOYEE MONTHLY BREAKDOWN", pageWidth/2, 45, {align:"center"});
+
+let breakdownRows = [];
+
+Object.keys(employeeMonthly).forEach(month=>{
+    Object.keys(employeeMonthly[month]).forEach(emp=>{
+        let data = employeeMonthly[month][emp];
+        let workingDays = data.present + data.absent;
+
+let percent = workingDays > 0
+    ? ((data.present / workingDays) * 100).toFixed(1) + "%"
+    : "0%";
+
+        breakdownRows.push([
+            month,
+            emp,
+            data.present,
+            data.leave,
+            data.absent,
+            percent,
+	    ""
+        ]);
+    });
+});
+
+doc.autoTable({
+    startY: 55,
+    head: [["Month","Employee","Present","Leave","Absent","Attendance %","Block Remarks"]],
+    body: breakdownRows,
+    theme: "grid",
+    styles: { 
+        fontSize: 9 
+    },
+
+    headStyles: { 
+        fillColor: [99,102,241],
+        halign: 'center'
+    },
+
+    columnStyles: {
+        0: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+    }
+});
+
+/* ===== PAGE NUMBERS + FOOTER ===== */
+const totalPages = doc.internal.getNumberOfPages();
+
+for(let i=1;i<=totalPages;i++){
+    doc.setPage(i);
+    doc.setFontSize(9);
+    doc.text("Page " + i + " of " + totalPages, pageWidth - 40, pageHeight - 10);
+    doc.text("Attendance System", 14, pageHeight - 10);
+}
+
+doc.save("Employee_Monthly_Breakdown_" + userBlock + ".pdf");
+
 }
 
 
@@ -1286,6 +1503,13 @@ renderReportTable = function(leaveData){
             pdfBtn.id = "downloadPdfBtn";
             pdfBtn.innerHTML = "<i class='fa-solid fa-file-pdf'></i> Download PDF";
             pdfBtn.onclick = downloadFullBlockReportPDF;
+
+	const empBtn = document.createElement("button");
+        empBtn.innerHTML = "<i class='fa-solid fa-chart-line'></i> Employee Monthly Breakdown";
+        empBtn.style.marginLeft = "10px";
+        empBtn.onclick = downloadEmployeeMonthlyBreakdownPDF;
+
+container.appendChild(empBtn);
 
             container.appendChild(pdfBtn);
 
@@ -1418,5 +1642,4 @@ body{
 </div>
 </body>
 </html>
-
 
