@@ -327,6 +327,15 @@ th{background:#2563eb;color:white}
 const API="https://script.google.com/macros/s/AKfycbzwO_TotE5IFWLHHTka-pjkfTu8d2LbGS77Iuy78meGEwPJjB4qmFkoCwebOBaDMRPc_A/exec";
 let userRole="",userBlock="",userName="",employeeName="";
 
+/* ===== TIME RESTRICTION (11:30 AM) ===== */
+function isAfterDeadline(){
+    const now = new Date();
+
+    const deadline = new Date();
+    deadline.setHours(11,30,0,0); // 11:30 AM
+
+    return now > deadline;
+}
 
 /* ---------- LOGIN ---------- */
 function login(){
@@ -425,6 +434,12 @@ if(tab==="report") {reportTab.classList.remove("hidden"); document.querySelector
 /* ---------- LEAVE ---------- */
 function applyLeave(){
 
+if(isAfterDeadline()){
+    leaveMsg.style.color="red";
+    leaveMsg.innerText="Leave cannot be applied after 11:30 AM.";
+    return;
+}
+	
 let from = fromDate.value;
 let to = toDate.value;
 let reasonText = reason.value.trim();
@@ -754,6 +769,11 @@ let cameraStream = null;
 let gpsWatcherId = null;
 
 function openCamera() {
+
+	if(isAfterDeadline()){
+    alert("Attendance marking is closed after 11:30 AM.");
+    return;
+}
     const cameraSection = document.getElementById("cameraSection");
     const video = document.getElementById("video");
     const overlay = document.getElementById("liveOverlay");
@@ -1545,6 +1565,31 @@ setInterval(()=>{
 document.getElementById("liveClock").innerText =
 "Current Time: " + new Date().toLocaleTimeString();
 },1000);
+
+function checkDailyDeadline(){
+
+    if(isAfterDeadline()){
+
+        // Disable Attendance Button
+        const attBtn = document.querySelector("#attendanceTab button");
+        if(attBtn){
+            attBtn.disabled = true;
+            attBtn.innerText = "Attendance Closed (After 11:30 AM)";
+        }
+
+        // Disable Leave Button
+        const leaveBtn = document.querySelector("#leaveTab button");
+        if(leaveBtn){
+            leaveBtn.disabled = true;
+            leaveBtn.innerText = "Leave Closed (After 11:30 AM)";
+        }
+
+    }
+}
+
+setInterval(checkDailyDeadline,10000);
+
+
 </script>
 
 <style>
@@ -1642,5 +1687,6 @@ body{
 </div>
 </body>
 </html>
+
 
 
